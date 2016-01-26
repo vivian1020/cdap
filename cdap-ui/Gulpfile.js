@@ -152,8 +152,8 @@ gulp.task('js:lib', function() {
       './bower_components/angularjs-dropdown-multiselect/dist/angularjs-dropdown-multiselect.min.js',
       './bower_components/marked/marked.min.js',
       './bower_components/angular-marked/dist/angular-marked.min.js',
-
-      './bower_components/js-beautify/js/lib/beautify.js'
+      './bower_components/js-beautify/js/lib/beautify.js',
+      './node_modules/redux/dist/redux.min.js'
 
     ].concat([
       './bower_components/cask-angular-*/*/module.js'
@@ -209,6 +209,7 @@ function getEs6Directives(isNegate) {
     (isNegate ? '!' : '') + './app/directives/my-global-navbar/*.js',
     (isNegate ? '!' : '') + './app/directives/datetime-picker/*.js',
     (isNegate ? '!' : '') + './app/directives/datetime-range/*.js'
+    (isNegate ? '!' : '') + './app/directives/dag-1/*.js'
   ];
 
   return es6directives;
@@ -227,6 +228,7 @@ gulp.task('watch:js:app', function() {
   var source = [
     './app/main.js',
     '!./app/lib/c3.js',
+    './app/lib/cdap-lib.js',
     './app/features/*/module.js',
     './app/**/*.js',
     '!./app/**/*-test.js'
@@ -492,6 +494,7 @@ gulp.task('watch', ['jshint', 'watch:build'], function() {
     '!./app/directives/my-global-navbar/**/*.js',
     '!./app/directives/datetime-picker/*.js',
     '!./app/directives/datetime-range/*.js',
+    '!./app/directives/dag-1/*.js',
     '!./app/**/*-test.js'
   ], ['jshint', 'watch:js:app']);
   gulp.watch([
@@ -509,7 +512,8 @@ gulp.task('watch', ['jshint', 'watch:build'], function() {
     './app/features/tracker/**/*.js',
     './app/directives/my-global-navbar/**/*.js',
     './app/directives/datetime-picker/*.js',
-    './app/directives/datetime-range/*.js'
+    './app/directives/datetime-range/*.js',
+    './app/directives/dag-1/*.js'
   ], ['jshint', 'watch:js:app:babel']);
 
   gulp.watch('./app/**/*.{less,css}', ['css']);
