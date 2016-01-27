@@ -16,14 +16,22 @@
 
 <br/>
 
-<div class="panel panel-default">
+<div class="panel panel-default" ng-controller="Dag1TestCtrl as Dag1TestCtrl">
   <div class="panel-heading">
     <div class="panel-title">
       Generic-DAG (Redux'ed)
     </div>
   </div>
   <div class="panel-body">
-    <my-dag1></my-dag1>
+    <div class="col-xs-4 form-inline">
+      <div class="form-group">
+        <input type="text" ng-model="Dag1TestCtrl.nodename" class="form-control"/>
+        <div class="btn btn-default" ng-click="Dag1TestCtrl.addNode()">Add</div>
+      </div>
+    </div>
+    <div class="col-xs-8">
+      <my-dag1></my-dag1>
+    </div>
   </div>
 </div>
 

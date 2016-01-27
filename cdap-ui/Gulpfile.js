@@ -154,7 +154,6 @@ gulp.task('js:lib', function() {
       './bower_components/angular-marked/dist/angular-marked.min.js',
       './bower_components/js-beautify/js/lib/beautify.js',
       './node_modules/redux/dist/redux.min.js'
-
     ].concat([
       './bower_components/cask-angular-*/*/module.js'
     ], mainBowerFiles({

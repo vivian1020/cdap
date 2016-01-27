@@ -8,7 +8,8 @@ let nodesReducer = (state = [], action = {}) => {
           id: _uuid.v4(),
           type: action.nodeType,
           icon: action.icon,
-          cssClass: action.cssClass
+          cssClass: action.cssClass,
+          name: action.name
         }
       ];
     case 'REMOVE':
