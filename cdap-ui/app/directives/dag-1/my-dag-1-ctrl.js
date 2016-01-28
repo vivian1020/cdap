@@ -1,16 +1,16 @@
 
-function Ctrl (Redux, MyDagStore, jsPlumb, MyDAGFactory, $timeout) {
+function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
   MyDagStore.subscribe(() => {
     this.nodes = MyDagStore.getState().nodes;
     $timeout(render.bind(this));
   });
-  var sourceSettings = angular.copy(MyDAGFactory.getSettings(false).source);
-  var sinkSettings = angular.copy(MyDAGFactory.getSettings(false).sink);
-  var transformSourceSettings = angular.copy(MyDAGFactory.getSettings(false).transformSource);
-  var transformSinkSettings = angular.copy(MyDAGFactory.getSettings(false).transformSink);
+  var rightEndpointSettings = angular.copy(MyDAG1Factory.getSettings(false).leftEndpoint);
+  var leftEndpointSettings = angular.copy(MyDAG1Factory.getSettings(false).rightEndpoint);
+  var transformSourceSettings = angular.copy(MyDAG1Factory.getSettings(false).leftLFEndpoint);
+  var transformSinkSettings = angular.copy(MyDAG1Factory.getSettings(false).rightLFEndpoint);
 
   jsPlumb.ready(() => {
-    var dagSettings = MyDAGFactory.getSettings().default;
+    var dagSettings = MyDAG1Factory.getSettings().default;
 
     jsPlumb.setContainer('dag-container');
     this.instance = jsPlumb.getInstance(dagSettings);
@@ -39,10 +39,10 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAGFactory, $timeout) {
     angular.forEach(this.nodes,  (node) => {
       switch(node.endpoint) {
         case 'R':
-          this.instance.addEndpoint(node.id, sourceSettings, {uuid: node.id});
+          this.instance.addEndpoint(node.id, rightEndpointSettings, {uuid: node.id});
           break;
         case 'L':
-          this.instance.addEndpoint(node.id, sinkSettings, {uuid: node.id});
+          this.instance.addEndpoint(node.id, leftEndpointSettings, {uuid: node.id});
           break;
         case 'LR':
           // Need to id each end point so that it can be used later to make connections.
@@ -59,6 +59,6 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAGFactory, $timeout) {
   };
 }
 
-Ctrl.$inject = ['Redux', 'MyDagStore', 'jsPlumb', 'MyDAGFactory', '$timeout'];
+Ctrl.$inject = ['Redux', 'MyDagStore', 'jsPlumb', 'MyDAG1Factory', '$timeout'];
 angular.module(PKG.name + '.commons')
   .controller('MyDag1Ctrl', Ctrl);

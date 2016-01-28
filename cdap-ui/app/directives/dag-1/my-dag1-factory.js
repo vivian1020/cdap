@@ -56,12 +56,12 @@ angular.module(PKG.name + '.commons')
       },
       anchors: [ 'Static']
     };
-    var sourceSettings = angular.extend({
+    var leftEndpointSettings = angular.extend({
       isSource: true,
       connectorStyle: connectorStyle,
       anchor: [ 0.5, 1, 1, 0, 26, -43, 'leftAnchor']
     }, commonSettings);
-    var sinkSettings = angular.extend({
+    var rightEndpointSettings = angular.extend({
       isTarget: true,
       anchor: [ 0.5, 1, -1, 0, -26, -43, 'rightAnchor'],
       connectorStyle: connectorStyle
@@ -73,22 +73,22 @@ angular.module(PKG.name + '.commons')
         settings = {
           default: defaultSettings,
           commonSettings: angular.extend(commonSettings, disabledConnectorOverlays),
-          source: angular.extend(sourceSettings, disabledConnectorOverlays),
-          sink: angular.extend(sinkSettings, disabledConnectorOverlays)
+          leftEndpoint: angular.extend(leftEndpointSettings, disabledConnectorOverlays),
+          rightEndpoint: angular.extend(rightEndpointSettings, disabledConnectorOverlays)
         };
       } else {
         settings = {
           default: defaultSettings,
           commonSettings: angular.extend(commonSettings, connectorOverlays),
-          source: angular.extend(sourceSettings, connectorOverlays),
-          sink: angular.extend(sinkSettings, connectorOverlays)
+          leftEndpoint: angular.extend(leftEndpointSettings, connectorOverlays),
+          rightEndpoint: angular.extend(rightEndpointSettings, connectorOverlays)
         };
       }
 
-      settings.transformSource = angular.copy(settings.source);
-      settings.transformSink = angular.copy(settings.sink);
-      settings.transformSource.anchor = [ 0.5, 1, 1, 0, 26, -43, 'leftRightAnchor'];
-      settings.transformSink.anchor = [ 0.5, 1, -1, 0, -26, -43, 'leftRightAnchor'];
+      settings.leftLFEndpoint = angular.copy(settings.leftEndpoint);
+      settings.rightLFEndpoint = angular.copy(settings.rightEndpoint);
+      settings.leftEndpoint.anchor = [ 0.5, 1, 1, 0, 26, -43, 'leftAnchor'];
+      settings.rightEndpoint.anchor = [ 0.5, 1, -1, 0, -26, -43, 'rightAnchor'];
 
       return settings;
     }
