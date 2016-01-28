@@ -1,3 +1,16 @@
-<div>
-  {{MyDag1Ctrl.store | json:4}}
+<div class="my-js-dag">
+  <div id="diagram-container">
+    <div id="dag-container">
+      <div ng-repeat="node in MyDag1Ctrl.nodes" class="box generic {{node.cssClass}}"
+             id="{{node.id}}">
+        <div class="node">
+          <div class="fa fa-close"
+               ng-click="">
+          </div>
+          <div class="icon fa {{node.icon}}"></div>
+        </div>
+        <div class="plugin-name" ng-bind="node.name"></div>
+      </div>
+    </div>
+  </div>
 </div>

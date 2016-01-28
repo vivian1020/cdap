@@ -23,14 +23,20 @@
     </div>
   </div>
   <div class="panel-body">
-    <div class="col-xs-4 form-inline">
+    <div class="col-xs-12 form-inline">
       <div class="form-group">
-        <input type="text" ng-model="Dag1TestCtrl.nodename" class="form-control"/>
+        <input type="text" ng-model="Dag1TestCtrl.nodename" placeholder="Node name" class="form-control"/>
+        <input type="text" ng-model="Dag1TestCtrl.endpoints" placeholder="# of Endpoints" class="form-control"/>
+        <input type="text" ng-model="Dag1TestCtrl.cssClass" placeholder="css class to apply" class="form-control"/>
+        <input type="text" ng-model="Dag1TestCtrl.icon" placeholder="Node icon" class="form-control"/>
         <div class="btn btn-default" ng-click="Dag1TestCtrl.addNode()">Add</div>
       </div>
     </div>
-    <div class="col-xs-8">
+    <div class="col-xs-12">
       <my-dag1></my-dag1>
+    </div>
+    <div class="col-xs-12">
+      <textarea class="form-control" cask-json-edit="Dag1TestCtrl.state" rows="5" cols="50"></textarea>
     </div>
   </div>
 </div>

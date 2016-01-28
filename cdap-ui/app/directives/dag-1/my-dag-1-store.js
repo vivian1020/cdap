@@ -1,19 +1,28 @@
 let _uuid;
-let nodesReducer = (state = [], action = {}) => {
+let nodes = (state = [], action = {}) => {
   switch(action.type) {
-    case 'ADD':
+    case 'ADD-NODE':
       return [
         ...state,
         {
           id: _uuid.v4(),
-          type: action.nodeType,
-          icon: action.icon,
-          cssClass: action.cssClass,
-          name: action.name
+          name: action.name || 'no-name',
+          endpoint: action.endpoint || 'LR',
+          icon: action.icon || 'fa-plug',
+          disabled: action.disabled || false,
+          cssClass: action.cssClass || ''
         }
       ];
-    case 'REMOVE':
+    case 'REMOVE-NODE':
       return state.filter(node => node.id === action.id);
+    default:
+      return state;
+  }
+};
+let connections = (state = [], action={}) => {
+  switch(action.type) {
+    case 'SET-CONNECTION':
+      return action.connections;
     default:
       return state;
   }
@@ -21,8 +30,11 @@ let nodesReducer = (state = [], action = {}) => {
 
 let Store = (Redux, uuid) => {
   _uuid = uuid;
-  console.log('store');
-  return Redux.createStore(nodesReducer);
+  let combinedReducer = Redux.combineReducers({
+    nodes,
+    connections
+  });
+  return Redux.createStore(combinedReducer);
 };
 Store.$inject = ['Redux', 'uuid'];
 
