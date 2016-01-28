@@ -14,7 +14,7 @@ let nodes = (state = [], action = {}) => {
         }
       ];
     case 'REMOVE-NODE':
-      return state.filter(node => node.id === action.id);
+      return state.filter(node => node.id !== action.id);
     default:
       return state;
   }

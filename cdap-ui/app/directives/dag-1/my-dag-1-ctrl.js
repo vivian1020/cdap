@@ -35,8 +35,13 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
 
   });
 
+  let endPoints = [];
   let render = () => {
     angular.forEach(this.nodes,  (node) => {
+      if (endPoints.indexOf(node.id) !== -1) {
+        return;
+      }
+      endPoints.push(node.id);
       switch(node.endpoint) {
         case 'R':
           this.instance.addEndpoint(node.id, rightEndpointSettings, {uuid: node.id});
@@ -55,6 +60,14 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
     this.instance.draggable(nodes, {
       start:  () => {},
       stop: () => {}
+    });
+  };
+
+  this.removeNode = (nodeId) => {
+    this.instance.remove(nodeId);
+    MyDagStore.dispatch({
+      type: 'REMOVE-NODE',
+      id: nodeId
     });
   };
 }
