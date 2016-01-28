@@ -18,14 +18,7 @@
 @import "../../../bower_components/bootstrap/less/mixins.less";
 @import "../../styles/themes/cdap/mixins.less";
 
-@light-yellow: lighten(#ffff99, 10%);
-
 my-dag1 {
-  .zoom-control {
-    z-index: 1023;
-    right: 15px;
-  }
-
   .my-js-dag {
     width: inherit;
     height: inherit;
@@ -140,44 +133,6 @@ my-dag1 {
       }
     }
 
-    .comment-box {
-      position: absolute;
-      width: 200px;
-      min-height: 50px;
-      background-color: @light-yellow;
-      border-radius: 4px;
-      cursor: move;
-
-      div.comment-content {
-        padding: 15px;
-        word-break: break-all;
-      }
-
-      textarea.form-control {
-        height: 100px;
-        background-color: @light-yellow;
-        resize: none;
-
-        &:focus {
-          border: none;
-        }
-      }
-
-      .fa.fa-close {
-        position: absolute;
-        right: 3px;
-        top: 3px;
-        cursor: pointer;
-        .opacity(0);
-        .transition(opacity 0.2s ease);
-      }
-      &:hover {
-        .fa.fa-close {
-          .opacity(1);
-        }
-      }
-    }
-
     .error-container {
       position: fixed;
       bottom: 50px;
@@ -257,94 +212,4 @@ my-dag1 {
     }
   }
 
-}
-
-.tooltip .tooltip-inner {
-  ul {
-    padding-left: 20px;
-  }
-}
-.badge-warning {
-  background-color: @brand-warning;
-}
-.badge-error {
-  background-color: @brand-danger;
-}
-.theme-cdap {
-  .tooltip-warning {
-    &.tooltip {
-      &.top {
-        .tooltip-arrow {
-          border-top-color: @brand-warning;
-        }
-      }
-    }
-    .tooltip-inner {
-      background-color: @brand-warning;
-      border-color: @brand-warning;
-    }
-  }
-  .tooltip-error {
-    &.tooltip {
-      &.top {
-        .tooltip-arrow {
-          border-top-color: @brand-danger;
-        }
-      }
-    }
-    .tooltip-inner {
-      background-color: @brand-danger;
-      border-color: @brand-danger;
-    }
-  }
-}
-
-.popover {
-  min-width: 250px;
-  max-width: 400px;
-
-  .popover-title {
-    background-color: white;
-    border-bottom: 0;
-    padding: 11px 10px;
-    h4 span {
-      font-weight: 500;
-    }
-    i.fa.fa-times {
-      color: #b4b4b6;
-      cursor: pointer;
-    }
-  }
-
-  .popover-content {
-    padding: 0 10px 10px;
-
-    .schema-popover {
-      max-height: 400px;
-      overflow-y: auto;
-      overflow-x: hidden;
-
-      .well { margin-bottom: 0; }
-
-      table.table-curved {
-        background-color: transparent;
-        border-left: 1px solid @table-border-color;
-        margin-top: 0;
-        margin-bottom: 0;
-        th, td {
-          border-left: 0;
-        }
-        th {
-          border-bottom: 1px solid @table-border-color;
-          color: #5F6674;
-          font-size: 13px;
-          font-weight: 500;
-        }
-        td {
-          font-size: 13px;
-          padding: 8px;
-        }
-      }
-    }
-  }
 }
