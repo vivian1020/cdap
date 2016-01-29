@@ -1,9 +1,21 @@
 <div class="my-js-dag">
   <div id="diagram-container">
     <div id="dag-container">
-      <div ng-repeat="node in MyDag1Ctrl.nodes" class="box generic {{node.cssClass}}"
-             id="{{node.id}}">
+      <div ng-repeat="node in MyDag1Ctrl.nodes"
+             class="box generic {{node.cssClass}}"
+             id="{{node.id}}"
+             ng-click="node.selected = true;"
+             ng-class="{'selected': node.selected}">
         <div class="node">
+          <div ng-if="node.badgeInfo" class="tooltip-wrapper {{node.tooltipCssClass}}">
+            <div class="badge-notification"
+                 tooltip="{{node.badgeTooltip}}"
+                 tooltip-class="tooltip-info">
+              <span class="badge {{node.badgeCssClass}}">
+                <span>{{node.badgeInfo}}</span>
+              </span>
+            </div>
+          </div>
           <div class="fa fa-close"
                ng-click="MyDag1Ctrl.removeNode(node.id)">
           </div>

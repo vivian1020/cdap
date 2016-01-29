@@ -65,6 +65,7 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
 
   this.removeNode = (nodeId) => {
     this.instance.remove(nodeId);
+    endPoints = endPoints.filter(id => nodeId !== id);
     MyDagStore.dispatch({
       type: 'REMOVE-NODE',
       id: nodeId

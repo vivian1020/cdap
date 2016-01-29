@@ -4,10 +4,23 @@ function Dag1TestCtrl(MyDagStore) {
       name: this.nodename,
       cssClass: this.cssClass,
       icon: this.icon,
-      endpoint: this.endpoints,
+      endpoint: this.endpointType,
+      badgeInfo: this.badgeInfo,
+      badgeTooltip: this.badgeTooltip,
+      badgeCssClass: this.badgeCssClass,
+      tooltipCssClass: this.tooltipCssClass,
       type: 'ADD-NODE'
     });
   };
+  this.nodename = 'Twitter';
+  this.cssClass='batchsource';
+  this.icon ='fa-twitter';
+  this.endpointType = 'R';
+  this.badgeInfo = '6';
+  this.badgeCssClass = 'badge-warning';
+  this.badgeTooltip = 'Please check node config';
+  this.tooltipCssClass = 'tooltip-warning';
+
   MyDagStore.subscribe(() => {
     this.state = MyDagStore.getState();
   });
