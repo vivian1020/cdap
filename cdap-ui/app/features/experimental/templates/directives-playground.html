@@ -23,24 +23,26 @@
     </div>
   </div>
   <div class="panel-body">
-    <div class="col-xs-12 form-inline">
-      <div class="form-group">
-        <input type="text" ng-model="Dag1TestCtrl.nodename" placeholder="Node name" class="form-control"/>
-        <input type="text" ng-model="Dag1TestCtrl.endpointType" placeholder="# of Endpoints" class="form-control"/>
-        <input type="text" ng-model="Dag1TestCtrl.cssClass" placeholder="css class to apply" class="form-control"/>
-        <input type="text" ng-model="Dag1TestCtrl.icon" placeholder="Node icon" class="form-control"/>
-        <input type="text" ng-model="Dag1TestCtrl.badgeInfo" placeholder="Badge Info" class="form-control"/>
-        <input type="text" ng-model="Dag1TestCtrl.badgeCssClass" placeholder="Badge css class" class="form-control"/>
-        <input type="text" ng-model="Dag1TestCtrl.badgeTooltip" placeholder="Tooltip for the badge" class="form-control"/>
-        <input type="text" ng-model="Dag1TestCtrl.tooltipCssClass" placeholder="Tooltip wrapper css class" class="form-control"/>
-        <div class="btn btn-default" ng-click="Dag1TestCtrl.addNode()">Add</div>
+    <div class="my-dag1-wrapper">
+      <div class="col-xs-12 form-inline">
+        <div class="form-group">
+          <input type="text" ng-model="Dag1TestCtrl.nodename" placeholder="Node name" class="form-control"/>
+          <input type="text" ng-model="Dag1TestCtrl.endpointType" placeholder="# of Endpoints" class="form-control"/>
+          <input type="text" ng-model="Dag1TestCtrl.cssClass" placeholder="css class to apply" class="form-control"/>
+          <input type="text" ng-model="Dag1TestCtrl.icon" placeholder="Node icon" class="form-control"/>
+          <input type="text" ng-model="Dag1TestCtrl.badgeInfo" placeholder="Badge Info" class="form-control"/>
+          <input type="text" ng-model="Dag1TestCtrl.badgeCssClass" placeholder="Badge css class" class="form-control"/>
+          <input type="text" ng-model="Dag1TestCtrl.badgeTooltip" placeholder="Tooltip for the badge" class="form-control"/>
+          <input type="text" ng-model="Dag1TestCtrl.tooltipCssClass" placeholder="Tooltip wrapper css class" class="form-control"/>
+          <div class="btn btn-default" ng-click="Dag1TestCtrl.addNode()">Add</div>
+        </div>
       </div>
-    </div>
-    <div class="col-xs-12">
-      <my-dag1></my-dag1>
-    </div>
-    <div class="col-xs-12">
-      <textarea class="form-control" cask-json-edit="Dag1TestCtrl.state" rows="5" cols="50"></textarea>
+      <div class="col-xs-12">
+        <my-dag1></my-dag1>
+      </div>
+      <div class="col-xs-12">
+        <textarea class="form-control" cask-json-edit="Dag1TestCtrl.state" rows="5" cols="50"></textarea>
+      </div>
     </div>
   </div>
 </div>

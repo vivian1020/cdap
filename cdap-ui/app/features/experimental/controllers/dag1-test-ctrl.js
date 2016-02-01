@@ -12,11 +12,11 @@ function Dag1TestCtrl(MyDagStore) {
       type: 'ADD-NODE'
     });
   };
-  this.nodename = 'Twitter';
-  this.cssClass='batchsource';
-  this.icon ='fa-twitter';
-  this.endpointType = 'R';
-  this.badgeInfo = '6';
+  this.nodename = 'Script Filter';
+  this.cssClass='transform';
+  this.icon ='';
+  this.endpointType = 'LR';
+  this.badgeInfo = '2';
   this.badgeCssClass = 'badge-warning';
   this.badgeTooltip = 'Please check node config';
   this.tooltipCssClass = 'tooltip-warning';

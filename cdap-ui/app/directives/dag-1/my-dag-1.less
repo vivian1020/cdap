@@ -85,6 +85,44 @@ my-dag1 {
             .opacity(1);
           }
         }
+
+        .tooltip-wrapper {
+          // position: relative;
+          // left: -20px;
+          // // 
+          // .badge-notification {
+          //   position: relative;
+          //   right: 25px;
+          // }
+
+
+          .tooltip-warning {
+            &.tooltip {
+              &.top {
+                .tooltip-arrow {
+                  border-top-color: @brand-warning;
+                }
+              }
+            }
+            .tooltip-inner {
+              background-color: @brand-warning;
+              border-color: @brand-warning;
+            }
+          }
+          .tooltip-error {
+            &.tooltip {
+              &.top {
+                .tooltip-arrow {
+                  border-top-color: @brand-danger;
+                }
+              }
+            }
+            .tooltip-inner {
+              background-color: @brand-danger;
+              border-color: @brand-danger;
+            }
+          }
+        }
       }
       &.generic {
         color: @cdap-bluegray;

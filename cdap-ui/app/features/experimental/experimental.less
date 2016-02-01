@@ -1,55 +1,89 @@
 my-dag1 {
   width: 100%;
   height: 60vh;
-}
-.my-js-dag {
-  overflow: auto;
 
-  .box {
-    &.generic {
-      &.realtimesource, &.batchsource {
-        color: #48c038;
-        // left: 10vw;
-        .node {
-          border: 3px solid #48c038;
-        }
-      }
-      &.transform {
-        color: #4586f3;
-        left: 30vw;
-        .node {
-          border: 3px solid #4586f3;
-        }
-      }
-      &.selected {
-        &.realtimesource, &.batchsource {
+  .my-js-dag {
+    overflow: auto;
+
+    .box {
+      &.generic {
+        &.realtimesource, &.batchsource{
+          color: #48c038;
+          // left: 10vw;
           .node {
-            background-color: #48c038;
-            border-width: 6px;
+            border: 3px solid #48c038;
+          }
+        }
+        &.batchsink, &realtimesink  {
+          color: #8367df;
+          .node {
+            border: 3px solid #8367df;
           }
         }
         &.transform {
+          color: #4586f3;
+          left: 30vw;
           .node {
-            background-color: #4586f3;
-            border-width: 6px;
+            border: 3px solid #4586f3;
           }
         }
-        &.realtimesink, &.batchsink {
-          .node {
-            background-color: #8367df;
-            border-width: 6px;
+        &.selected {
+          &.realtimesource, &.batchsource {
+            .node {
+              background-color: #48c038;
+              border-width: 6px;
+            }
           }
-        }
-        .icon.fa, .fa.fa-close {
-          color: white;
-        }
-        .icon.fa {
-          line-height: 34px;
-        }
-        .fa.fa-close {
-          top: 3px;
+          &.transform {
+            .node {
+              background-color: #4586f3;
+              border-width: 6px;
+            }
+          }
+          &.realtimesink, &.batchsink {
+            .node {
+              background-color: #8367df;
+              border-width: 6px;
+            }
+          }
+          .icon.fa, .fa.fa-close {
+            color: white;
+          }
+          .icon.fa {
+            line-height: 34px;
+          }
+          .fa.fa-close {
+            top: 3px;
+          }
         }
       }
     }
+
+    .jsplumb-endpoint {
+      svg {
+        overflow: visible;
+      }
+      circle {
+        fill: white;
+        r: 2px;
+        stroke-width: 8px;
+      }
+      &-anchor-leftAnchor circle {
+        stroke: #48c038;
+      }
+      &-anchor-leftRightAnchor circle {
+        stroke: #4586f3;
+      }
+      &-anchor-rightAnchor circle {
+        stroke: #8367df;
+      }
+    }
+  }
+
+}
+
+.panel .panel-body .my-dag1-wrapper {
+  textarea {
+    resize: vertical;
   }
 }

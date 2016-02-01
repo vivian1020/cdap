@@ -87,8 +87,8 @@ angular.module(PKG.name + '.commons')
 
       settings.leftLFEndpoint = angular.copy(settings.leftEndpoint);
       settings.rightLFEndpoint = angular.copy(settings.rightEndpoint);
-      settings.leftEndpoint.anchor = [ 0.5, 1, 1, 0, 26, -43, 'leftAnchor'];
-      settings.rightEndpoint.anchor = [ 0.5, 1, -1, 0, -26, -43, 'rightAnchor'];
+      settings.leftLFEndpoint.anchor = [ 0.5, 1, 1, 0, 26, -43, 'leftRightAnchor'];
+      settings.rightLFEndpoint.anchor = [ 0.5, 1, -1, 0, -26, -43, 'leftRightAnchor'];
 
       return settings;
     }
