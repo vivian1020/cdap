@@ -6,7 +6,14 @@
     "start": "node ./server.js",
     "prebuild": "npm install && ./node_modules/bower/bin/bower update --config.interactive=false",
     "build": "node ./node_modules/gulp/bin/gulp.js build",
+<<<<<<< HEAD
     "distribute": "node ./node_modules/gulp/bin/gulp.js distribute"
+=======
+    "test-single-run": "node ./node_modules/karma/bin/karma start test/karma-conf.js --no-auto-watch --single-run",
+    "webdriver-update": "webdriver-manager update",
+    "prewebdriver": "webdriver-manager update",
+    "integration": "protractor test/integration/conf.js"
+>>>>>>> 9b007e5... Adds test scripts & npm modules + no test passes as of now. Need to work on it
   },
   "repository": {
     "type": "git",
@@ -38,7 +45,12 @@
     "gulp-util": "3.0.7",
     "gulp-wrapper": "1.0.0",
     "main-bower-files": "2.11.1",
-    "merge-stream": "1.0.0"
+    "merge-stream": "1.0.0",
+    "jasmine-core": "^2.2.0",
+    "karma": "^0.12.31",
+    "karma-chrome-launcher": "^0.1.7",
+    "karma-jasmine": "^0.3.5",
+    "protractor": "^1.8.0"
   },
   "dependencies": {
     "body-parser": "1.14.2",
