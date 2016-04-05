@@ -207,7 +207,7 @@ function getEs6Directives(isNegate) {
     (isNegate ? '!' : '') + './app/directives/plugin-templates/**/*.js',
     (isNegate ? '!' : '') + './app/directives/my-global-navbar/*.js',
     (isNegate ? '!' : '') + './app/directives/datetime-picker/*.js',
-    (isNegate ? '!' : '') + './app/directives/datetime-range/*.js'
+    (isNegate ? '!' : '') + './app/directives/datetime-range/*.js',
     (isNegate ? '!' : '') + './app/directives/dag-1/*.js'
   ];
 

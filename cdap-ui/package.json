@@ -6,14 +6,11 @@
     "start": "node ./server.js",
     "prebuild": "npm install && ./node_modules/bower/bin/bower update --config.interactive=false",
     "build": "node ./node_modules/gulp/bin/gulp.js build",
-<<<<<<< HEAD
-    "distribute": "node ./node_modules/gulp/bin/gulp.js distribute"
-=======
+    "distribute": "node ./node_modules/gulp/bin/gulp.js distribute",
     "test-single-run": "node ./node_modules/karma/bin/karma start test/karma-conf.js --no-auto-watch --single-run",
     "webdriver-update": "webdriver-manager update",
     "prewebdriver": "webdriver-manager update",
     "integration": "protractor test/integration/conf.js"
->>>>>>> 9b007e5... Adds test scripts & npm modules + no test passes as of now. Need to work on it
   },
   "repository": {
     "type": "git",
