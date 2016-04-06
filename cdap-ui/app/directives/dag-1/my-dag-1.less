@@ -19,10 +19,15 @@
 @import "../../styles/themes/cdap/mixins.less";
 
 my-dag1 {
+  .btn-group-vertical.btn-group-sm.zoom-control {
+    position: absolute;
+    right: 0;
+    z-index: 2;
+  }
   .my-js-dag {
     width: inherit;
     height: inherit;
-
+    z-index: 1;
     #diagram-container {
       position: relative;
       width: inherit;
@@ -89,7 +94,7 @@ my-dag1 {
         .tooltip-wrapper {
           // position: relative;
           // left: -20px;
-          // // 
+          // //
           // .badge-notification {
           //   position: relative;
           //   right: 25px;

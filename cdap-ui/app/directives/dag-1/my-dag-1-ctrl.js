@@ -8,7 +8,7 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
   var leftEndpointSettings = angular.copy(MyDAG1Factory.getSettings(false).rightEndpoint);
   var transformSourceSettings = angular.copy(MyDAG1Factory.getSettings(false).leftLFEndpoint);
   var transformSinkSettings = angular.copy(MyDAG1Factory.getSettings(false).rightLFEndpoint);
-
+  this.scale = 1.0;
   jsPlumb.ready(() => {
     var dagSettings = MyDAG1Factory.getSettings().default;
 
@@ -63,6 +63,16 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
     });
   };
 
+  this.zoomIn = () => {
+    this.scale += 0.1;
+    if (this.nodes.length === 0) { return; }
+    MyDAG1Factory.setZoom(this.scale, this.instance);
+  };
+  this.zoomOut = () => {
+    if (this.scale <= 0.2) { return; }
+    this.scale -=0.1;
+    MyDAG1Factory.setZoom(this.scale, this.instance);
+  }
   this.removeNode = (nodeId) => {
     this.instance.remove(nodeId);
     endPoints = endPoints.filter(id => nodeId !== id);

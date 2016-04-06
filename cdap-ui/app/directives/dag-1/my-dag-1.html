@@ -1,3 +1,74 @@
+<!--
+  Copyright © 2015 Cask Data, Inc.
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy of
+  the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  License for the specific language governing permissions and limitations under
+  the License.
+-->
+
+
+<div class="btn-group-vertical btn-group-sm zoom-control">
+  <button class="btn btn-default"
+          ng-click="MyDag1Ctrl.zoomIn()"
+          uib-tooltip="Zoom In"
+          ng-if="!MyDag1Ctrl.disableNodeClick"
+          tooltip-append-to-body="true"
+          tooltip-placement="left"
+          tooltip-popup-delay="500">
+    <i class="fa fa-plus"></i>
+  </button>
+
+  <button class="btn btn-default"
+          ng-click="MyDag1Ctrl.zoomOut()"
+          ng-if="!MyDag1Ctrl.disableNodeClick"
+          uib-tooltip="Zoom Out"
+          tooltip-append-to-body="true"
+          tooltip-placement="left"
+          tooltip-popup-delay="500">
+    <i class="fa fa-minus"></i>
+  </button>
+
+  <button class="btn btn-default"
+          ng-click="MyDag1Ctrl.fitToScreen()"
+          ng-if="!MyDag1Ctrl.disableNodeClick"
+          uib-tooltip="Fit to screen"
+          tooltip-append-to-body="true"
+          tooltip-placement="left"
+          tooltip-popup-delay="500">
+    <i class="icon-fit"></i>
+  </button>
+
+  <button class="btn btn-default"
+          ng-click="MyDag1Ctrl.cleanUpGraph()"
+          ng-if="!MyDag1Ctrl.isDisabled"
+          uib-tooltip="Align"
+          tooltip-append-to-body="true"
+          tooltip-placement="left"
+          tooltip-popup-delay="500">
+    <i class="icon-clean"></i>
+  </button>
+
+
+  <!-- Adding Comments -->
+  <button class="btn btn-default"
+          ng-click="MyDag1Ctrl.addComment()"
+          ng-if="!MyDag1Ctrl.isDisabled"
+          uib-tooltip="Add Comments"
+          tooltip-append-to-body="true"
+          tooltip-placement="left"
+          tooltip-popup-delay="500">
+    <i class="fa fa-commenting"></i>
+  </button>
+</div>
+
 <div class="my-js-dag">
   <div id="diagram-container">
     <div id="dag-container">
