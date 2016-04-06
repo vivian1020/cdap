@@ -182,7 +182,6 @@ angular.module(PKG.name + '.commons')
      **/
     function setZoom (zoom, instance, transformOrigin, el) {
       transformOrigin = transformOrigin || [ 0.5, 0.5 ];
-      instance = instance || jsPlumb;
       el = el || instance.getContainer();
       var p = [ 'webkit', 'moz', 'ms', 'o' ],
           s = 'scale(' + zoom + ')',

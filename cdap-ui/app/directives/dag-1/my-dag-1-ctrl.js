@@ -8,9 +8,41 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
   var leftEndpointSettings = angular.copy(MyDAG1Factory.getSettings(false).rightEndpoint);
   var transformSourceSettings = angular.copy(MyDAG1Factory.getSettings(false).leftLFEndpoint);
   var transformSinkSettings = angular.copy(MyDAG1Factory.getSettings(false).rightLFEndpoint);
+
   this.scale = 1.0;
+  this.panning = {
+    style: {
+      'top': 0,
+      'left': 0
+    },
+    top: 0,
+    left: 0
+  };
+
   jsPlumb.ready(() => {
     var dagSettings = MyDAG1Factory.getSettings().default;
+
+    // Making canvas draggable
+    this.secondInstance = jsPlumb.getInstance();
+
+    let transformCanvas = (top, left) => {
+      this.panning.top += top;
+      this.panning.left += left;
+
+      this.panning.style = {
+        'top': this.panning.top + 'px',
+        'left': this.panning.left + 'px'
+      };
+    };
+
+    this.secondInstance.draggable('diagram-container', {
+      stop: function (e) {
+        // transformCanvas(e.pos[1], e.pos[0]);
+      },
+      start: function () {
+        // canvasDragged = true;
+      }
+    });
 
     jsPlumb.setContainer('dag-container');
     this.instance = jsPlumb.getInstance(dagSettings);
@@ -72,7 +104,28 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
     if (this.scale <= 0.2) { return; }
     this.scale -=0.1;
     MyDAG1Factory.setZoom(this.scale, this.instance);
-  }
+  };
+  this.fitToScreen = () => {
+    let state = MyDagStore.getState();
+    let nodes = state.nodes;
+    let connections = state.connections;
+
+    var graph = MyDAG1Factory.getGraphLayout(nodes, connections);
+    angular.forEach(nodes, function (node) {
+      node._uiPosition = node._uiPosition || {};
+      node._uiPosition = {
+        'top': graph._nodes[node.id].y + 'px' ,
+        'left': graph._nodes[node.id].x + 'px'
+      };
+    });
+    this.nodes = nodes;
+    if (this.scale > 1) {
+      this.scale = 1;
+    }
+    MyDAG1Factory.setZoom(this.scale, this.instance);
+    $timeout(this.instance.repaintEverything);
+  };
+
   this.removeNode = (nodeId) => {
     this.instance.remove(nodeId);
     endPoints = endPoints.filter(id => nodeId !== id);
