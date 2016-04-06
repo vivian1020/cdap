@@ -1,17 +1,54 @@
 function Dag1TestCtrl(MyDagStore) {
-  this.addNode = () => {
+  this.addNode = (type) => {
+    switch(type) {
+      case 'source':
+        this.addSource();
+        break;
+      case 'sink':
+        this.addSink();
+        break;
+      case 'transform':
+        this.addTransform();
+        break;
+    }
+  };
+  this.addSource = () => {
     MyDagStore.dispatch({
-      name: this.nodename,
-      cssClass: this.cssClass,
-      icon: this.icon,
-      endpoint: this.endpointType,
-      badgeInfo: this.badgeInfo,
-      badgeTooltip: this.badgeTooltip,
-      badgeCssClass: this.badgeCssClass,
-      tooltipCssClass: this.tooltipCssClass,
+      name: 'Source1',
+      cssClass: 'batchsource',
+      endpoint: 'R',
+      badgeInfo: 2,
+      badgeToolTip: 'Some tooltip',
+      badgeCssClass: 'text-warning',
+      tooltipCssClass: 'badge-warning',
       type: 'ADD-NODE'
     });
   };
+  this.addSink = () => {
+    MyDagStore.dispatch({
+      name: 'Sink1',
+      cssClass: 'batchsink',
+      endpoint: 'L',
+      badgeInfo: 2,
+      badgeToolTip: 'Some tooltip',
+      badgeCssClass: 'text-warning',
+      tooltipCssClass: 'badge-warning',
+      type: 'ADD-NODE'
+    });
+  };
+  this.addTransform = () => {
+    MyDagStore.dispatch({
+      name: 'Transform1',
+      cssClass: 'transform',
+      endpoint: 'LR',
+      badgeInfo: 2,
+      badgeToolTip: 'Some tooltip',
+      badgeCssClass: 'text-warning',
+      tooltipCssClass: 'badge-warning',
+      type: 'ADD-NODE'
+    });
+  };
+
   this.nodename = 'Script Filter';
   this.cssClass='transform';
   this.icon ='';
