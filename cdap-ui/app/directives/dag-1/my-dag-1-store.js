@@ -25,6 +25,11 @@ let nodes = (state = [], action = {}) => {
       ];
     case 'REMOVE-NODE':
       return state.filter(node => node.id !== action.id);
+    case 'RESET-SELECTED':
+      return state.map( node => {
+        node.selected = false;
+        return node;
+      });
     case 'UPDATE-NODE':
       let matchIndex;
       let matchNode = state.filter( (node, index) =>{

@@ -89,9 +89,8 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
       }
     });
     var nodes = document.querySelectorAll('.box');
-    console.log('nodes: ', nodes);
     this.instance.draggable(nodes, {
-      start:  () => {},
+      start:  () => {this.canvasIsDragged = true; },
       stop: (dragEndEvent) => {
         var config = {
           _uiPosition: {
@@ -222,6 +221,21 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
     MyDagStore.dispatch({
       type: 'REMOVE-NODE',
       id: nodeId
+    });
+  };
+  this.onNodeClick = (nodeId) => {
+    console.log('isCanvasDragged', this.canvasIsDragged);
+    if (this.canvasIsDragged) {
+      this.canvasIsDragged = false;
+      return;
+    }
+    this.MyDagStore.dispatch({ type: 'RESET-SELECTED'});
+    this.MyDagStore.dispatch({
+      type: 'UPDATE-NODE',
+      id: nodeId,
+      config: {
+        selected: true
+      }
     });
   };
 }
