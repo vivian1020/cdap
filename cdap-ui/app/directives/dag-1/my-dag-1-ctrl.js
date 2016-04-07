@@ -33,12 +33,13 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
     var dagSettings = MyDAG1Factory.getSettings().default;
     jsPlumb.setContainer('dag-container');
     this.instance = jsPlumb.getInstance(dagSettings);
-    this.instance.bind('connection', () => {
+    this.instance.bind('connection', (info, originalEvent) => {
+      if (!originalEvent) {return;}
       let conn = this.instance.getConnections().map( conn=> {
         return {from: conn.sourceId, to: conn.targetId};
       });
       MyDagStore.dispatch({
-        type: 'SET-CONNECTION',
+        type: 'SET-CONNECTIONS',
         connections: conn
       });
     });
@@ -47,7 +48,7 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
         return {from: conn.sourceId, to: conn.targetId};
       });
       MyDagStore.dispatch({
-        type: 'SET-CONNECTION',
+        type: 'SET-CONNECTIONS',
         connections: conn
       });
     });

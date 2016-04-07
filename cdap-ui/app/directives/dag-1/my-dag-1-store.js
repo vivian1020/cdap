@@ -67,7 +67,6 @@ let connections = (state = [], action={}) => {
   switch(action.type) {
     case 'SET-CONNECTIONS':
       return [
-        ...state,
         ...action.connections
       ];
     default:
