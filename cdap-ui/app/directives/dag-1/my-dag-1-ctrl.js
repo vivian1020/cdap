@@ -2,6 +2,16 @@
 function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
   this.$scope = $scope;
   this.MyDagStore = MyDagStore;
+  this.scale = 1.0;
+  this.panning = {
+    style: {
+      'top': 0,
+      'left': 0
+    },
+    top: 0,
+    left: 0
+  };
+
   MyDagStore.subscribe(() => {
     this.nodes = MyDagStore.getState().nodes;
     this.nodes = this.nodes.map( node => {
@@ -18,16 +28,6 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
   var leftEndpointSettings = angular.copy(MyDAG1Factory.getSettings(false).rightEndpoint);
   var transformSourceSettings = angular.copy(MyDAG1Factory.getSettings(false).leftLFEndpoint);
   var transformSinkSettings = angular.copy(MyDAG1Factory.getSettings(false).rightLFEndpoint);
-
-  this.scale = 1.0;
-  this.panning = {
-    style: {
-      'top': 0,
-      'left': 0
-    },
-    top: 0,
-    left: 0
-  };
 
   jsPlumb.ready(() => {
     var dagSettings = MyDAG1Factory.getSettings().default;
@@ -56,6 +56,7 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
     this.secondInstance = jsPlumb.getInstance();
 
     this.secondInstance.draggable('diagram-container', {
+      start: () => {},
       stop: (e) => {
         e.el.style.top = '0px';
         e.el.style.left = '0px';
@@ -68,6 +69,20 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
   });
 
   let endPoints = [];
+  let renderConnectionOnInit = (connectionsFromStore) => {
+    connectionsFromStore.forEach( connection => {
+      var sourceNode = this.nodes.filter( node => [node.name, node.id].indexOf(connection.from) !== -1);
+      var targetNode = this.nodes.filter( node => [node.name, node.id].indexOf(connection.to) !== -1);
+      if (!sourceNode.length || !targetNode.length) {
+        return;
+      }
+      var sourceId = sourceNode[0].nodeType === 'transform' ? 'Left' + connection.from : connection.from;
+      var targetId = targetNode[0].nodeType === 'transform' ? 'Right' + connection.to : connection.to;
+      this.instance.connect({
+        uuids: [sourceId, targetId]
+      });
+    });
+  };
   let render = () => {
     angular.forEach(this.nodes,  (node) => {
       if (endPoints.indexOf(node.id) !== -1) {
@@ -106,6 +121,13 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
         $timeout(this.instance.repaintEverything);
       }
     });
+    let conns = this.instance.getConnections();
+    let connectionsFromStore = this.MyDagStore.getState().connections;
+    if (connectionsFromStore.length > conns.length) {
+      renderConnectionOnInit(connectionsFromStore);
+      this.cleanupGraph();
+      this.fitToScreen();
+    }
   };
 
   this.zoomIn = () => {
@@ -131,11 +153,14 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
         'left': graph._nodes[node.id].x + 'px'
       };
     });
-    this.nodes = nodes;
     if (this.scale > 1) {
       this.scale = 1;
     }
     MyDAG1Factory.setZoom(this.scale, this.instance);
+    this.$scope.dagContainer.style.left = '0px';
+    this.$scope.dagContainer.style.top = '0px';
+    var config = MyDAG1Factory.getGraphMargins(this.$scope.element, nodes);
+    this.nodes = config.nodes;
     $timeout(this.instance.repaintEverything);
   };
   this.fitToScreen = () => {
@@ -205,15 +230,13 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
     angular.forEach(nodes, function (node) {
       node._uiPosition.top = (parseInt(node._uiPosition.top, 10) - offsetTop + 50) + 'px';
     });
-
-    MyDAG1Factory.getGraphMargins(this.$scope.element, nodes);
-
-    $timeout(this.instance.repaintEverything);
+    var config = MyDAG1Factory.getGraphMargins(this.$scope.element, nodes);
+    this.nodes = config.nodes;
     this.$scope.diagramContainer.style.top = '0px';
     this.$scope.diagramContainer.style.left= '0px';
     this.$scope.dagContainer.style.left = '0px';
     this.$scope.dagContainer.style.top = '0px';
-
+    $timeout(this.instance.repaintEverything);
   };
   this.removeNode = (nodeId) => {
     this.instance.remove(nodeId);

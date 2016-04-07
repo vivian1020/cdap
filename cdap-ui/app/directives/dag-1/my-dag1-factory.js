@@ -241,7 +241,8 @@ angular.module(PKG.name + '.commons')
       }
 
       return {
-        scale: scale
+        scale: scale,
+        nodes: plugins
       };
     }
 
