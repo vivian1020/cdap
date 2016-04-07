@@ -20,6 +20,7 @@ function Dag1TestCtrl(MyDagStore) {
       badgeInfo: 2,
       badgeToolTip: 'Some tooltip',
       badgeCssClass: 'text-warning',
+      nodeType: 'source',
       tooltipCssClass: 'badge-warning',
       type: 'ADD-NODE'
     });
@@ -32,6 +33,7 @@ function Dag1TestCtrl(MyDagStore) {
       badgeInfo: 2,
       badgeToolTip: 'Some tooltip',
       badgeCssClass: 'text-warning',
+      nodeType: 'sink',
       tooltipCssClass: 'badge-warning',
       type: 'ADD-NODE'
     });
@@ -45,6 +47,7 @@ function Dag1TestCtrl(MyDagStore) {
       badgeToolTip: 'Some tooltip',
       badgeCssClass: 'text-warning',
       tooltipCssClass: 'badge-warning',
+      nodeType: 'transform',
       type: 'ADD-NODE'
     });
   };
