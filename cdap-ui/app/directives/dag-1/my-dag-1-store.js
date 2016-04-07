@@ -15,11 +15,36 @@ let nodes = (state = [], action = {}) => {
           badgeTooltip: action.badgeTooltip || null,
           tooltipCssClass: action.tooltipCssClass || '',
           disabled: action.disabled || false,
-          selected: action.selected || false
+          selected: action.selected || false,
+          nodeType: action.nodeType,
+          _uiPosition: {
+            left: '',
+            top: ''
+          }
         }
       ];
     case 'REMOVE-NODE':
       return state.filter(node => node.id !== action.id);
+    case 'UPDATE-NODE':
+      let matchIndex;
+      let matchNode = state.filter( (node, index) =>{
+        if (node.id === action.id) {
+          matchIndex = index;
+          return true;
+        }
+      });
+      if (matchNode && matchNode.length) {
+        matchNode = matchNode[0];
+        angular.extend(matchNode, action.config);
+        return [
+          ...state.slice(0, matchIndex),
+          state[matchIndex],
+          ...state.slice(matchIndex+1)
+        ];
+      } else {
+        return state;
+      }
+      break;
     default:
       return state;
   }

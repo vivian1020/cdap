@@ -198,11 +198,90 @@ angular.module(PKG.name + '.commons')
       instance.setZoom(zoom);
     }
 
+    function getGraphMargins(element, plugins) {
+      var margins = element[0].parentElement.getBoundingClientRect();
+      var parentWidth = margins.width;
+      var parentHeight = margins.height;
+
+      var scale = 1.0;
+
+      // Find furthest nodes
+      var maxLeft = 0;
+      var maxTop = 0;
+      angular.forEach(plugins, function (plugin) {
+        if (!plugin._uiPosition) { return; }
+        var left = parseInt(plugin._uiPosition.left, 10);
+        var top = parseInt(plugin._uiPosition.top, 10);
+
+        maxLeft = maxLeft < left ? left : maxLeft;
+        maxTop = maxTop < top ? top : maxTop;
+      });
+
+
+      var marginLeft = (parentWidth - maxLeft) / 2 - 50;
+      var marginTop = (parentHeight - maxTop) / 2 - 50;
+
+      angular.forEach(plugins, function (plugin) {
+        if (!plugin._uiPosition) { return; }
+        var left = parseInt(plugin._uiPosition.left, 10) + marginLeft;
+        var top = parseInt(plugin._uiPosition.top, 10) + marginTop;
+
+        plugin._uiPosition.left = left + 'px';
+        plugin._uiPosition.top = top + 'px';
+      });
+
+
+      if (maxLeft > parentWidth - 100) {
+        scale = (parentWidth - 100) / maxLeft;
+      }
+
+      if (maxTop > parentHeight - 100) {
+        var topScale = (parentHeight - 100) / maxTop;
+        scale = scale < topScale ? scale : topScale;
+      }
+
+      return {
+        scale: scale
+      };
+    }
+
+    function getNodePosition(canvasPanning, nodeType) {
+      let nodePosition = {
+        top: 150 - canvasPanning.top,
+        left: (10/100 * document.documentElement.clientWidth) - canvasPanning.left
+      };
+      let _uiPosition;
+      let offset = 35;
+      // set initial position
+      switch (nodeType) {
+        case 'source':
+          _uiPosition = {
+            top: (nodePosition.top + offset) + 'px',
+            left: (nodePosition.left + offset) + 'px'
+          };
+          break;
+        case 'sink':
+          _uiPosition = {
+            top: (nodePosition.top + offset) + 'px',
+            left: (nodePosition.left + offset) + 'px'
+          };
+          break;
+        default:
+          _uiPosition = {
+            top: (nodePosition.top + offset) + 'px',
+            left: (nodePosition.left + offset) + 'px'
+          };
+          break;
+      }
+      return _uiPosition;
+    }
     return {
       getSettings: getSettings,
       getIcon: getIcon,
       getGraphLayout: getGraphLayout,
-      setZoom: setZoom
+      setZoom: setZoom,
+      getGraphMargins: getGraphMargins,
+      getNodePosition: getNodePosition
     };
 
   });

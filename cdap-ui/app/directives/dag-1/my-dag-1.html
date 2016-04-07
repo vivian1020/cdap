@@ -47,7 +47,7 @@
   </button>
 
   <button class="btn btn-default"
-          ng-click="MyDag1Ctrl.cleanUpGraph()"
+          ng-click="MyDag1Ctrl.cleanupGraph()"
           ng-if="!MyDag1Ctrl.isDisabled"
           uib-tooltip="Align"
           tooltip-append-to-body="true"
@@ -71,7 +71,7 @@
 
 <div class="my-js-dag">
   <div id="diagram-container">
-    <div id="dag-container" ng-style="MyDag1Ctrl.panning.style">
+    <div id="dag-container">
       <div ng-repeat="node in MyDag1Ctrl.nodes"
              class="box generic {{node.cssClass}}"
              id="{{node.id}}"

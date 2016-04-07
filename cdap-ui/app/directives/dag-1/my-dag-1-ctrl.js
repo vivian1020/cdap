@@ -1,8 +1,18 @@
 
-function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
+function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
+  this.$scope = $scope;
+  this.MyDagStore = MyDagStore;
   MyDagStore.subscribe(() => {
     this.nodes = MyDagStore.getState().nodes;
-    $timeout(render.bind(this));
+    this.nodes = this.nodes.map( node => {
+      if (!node._uiPosition.left.length || !node._uiPosition.top.length){
+        let position = MyDAG1Factory.getNodePosition(this.panning, node.nodeType);
+        node._uiPosition.top = position.top;
+        node._uiPosition.left = position.left;
+      }
+      return node;
+    });
+    $timeout(render);
   });
   var rightEndpointSettings = angular.copy(MyDAG1Factory.getSettings(false).leftEndpoint);
   var leftEndpointSettings = angular.copy(MyDAG1Factory.getSettings(false).rightEndpoint);
@@ -21,29 +31,6 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
 
   jsPlumb.ready(() => {
     var dagSettings = MyDAG1Factory.getSettings().default;
-
-    // Making canvas draggable
-    this.secondInstance = jsPlumb.getInstance();
-
-    let transformCanvas = (top, left) => {
-      this.panning.top += top;
-      this.panning.left += left;
-
-      this.panning.style = {
-        'top': this.panning.top + 'px',
-        'left': this.panning.left + 'px'
-      };
-    };
-
-    this.secondInstance.draggable('diagram-container', {
-      stop: function (e) {
-        // transformCanvas(e.pos[1], e.pos[0]);
-      },
-      start: function () {
-        // canvasDragged = true;
-      }
-    });
-
     jsPlumb.setContainer('dag-container');
     this.instance = jsPlumb.getInstance(dagSettings);
     this.instance.bind('connection', () => {
@@ -65,6 +52,19 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
       });
     });
 
+    // Making canvas draggable
+    this.secondInstance = jsPlumb.getInstance();
+
+    this.secondInstance.draggable('diagram-container', {
+      stop: (e) => {
+        e.el.style.top = '0px';
+        e.el.style.left = '0px';
+        this.panning.top += e.pos[1];
+        this.panning.left += e.pos[0];
+        e.el.children[0].style.top = this.panning.top + 'px';
+        e.el.children[0].style.left = this.panning.left + 'px';
+      }
+    });
   });
 
   let endPoints = [];
@@ -89,9 +89,23 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
       }
     });
     var nodes = document.querySelectorAll('.box');
+    console.log('nodes: ', nodes);
     this.instance.draggable(nodes, {
       start:  () => {},
-      stop: () => {}
+      stop: (dragEndEvent) => {
+        var config = {
+          _uiPosition: {
+            top: dragEndEvent.el.style.top,
+            left: dragEndEvent.el.style.left
+          }
+        };
+        this.MyDagStore.dispatch({
+          type: 'UPDATE-NODE',
+          id: dragEndEvent.el.id,
+          config: config
+        });
+        $timeout(this.instance.repaintEverything);
+      }
     });
   };
 
@@ -105,13 +119,13 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
     this.scale -=0.1;
     MyDAG1Factory.setZoom(this.scale, this.instance);
   };
-  this.fitToScreen = () => {
+  this.cleanupGraph = () => {
     let state = MyDagStore.getState();
     let nodes = state.nodes;
     let connections = state.connections;
 
     var graph = MyDAG1Factory.getGraphLayout(nodes, connections);
-    angular.forEach(nodes, function (node) {
+    angular.forEach(nodes, (node) => {
       node._uiPosition = node._uiPosition || {};
       node._uiPosition = {
         'top': graph._nodes[node.id].y + 'px' ,
@@ -125,7 +139,83 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
     MyDAG1Factory.setZoom(this.scale, this.instance);
     $timeout(this.instance.repaintEverything);
   };
+  this.fitToScreen = () => {
+    let state = MyDagStore.getState();
+    let nodes = state.nodes;
+    if (nodes.length === 0) { return; }
 
+    /**
+     * Need to find the furthest nodes:
+     * 1. Left most nodes
+     * 2. Right most nodes
+     * 3. Top most nodes
+     * 4. Bottom most nodes
+     **/
+    var minLeft = _.min(nodes, function (node) {
+      if (node._uiPosition.left.includes('vw')) {
+        var left = parseInt(node._uiPosition.left, 10)/100 * document.documentElement.clientWidth;
+        node._uiPosition.left = left + 'px';
+      }
+      return parseInt(node._uiPosition.left, 10);
+    });
+    var maxLeft = _.max(nodes, function (node) {
+      if (node._uiPosition.left.includes('vw')) {
+        var left = parseInt(node._uiPosition.left, 10)/100 * document.documentElement.clientWidth;
+        node._uiPosition.left = left + 'px';
+      }
+      return parseInt(node._uiPosition.left, 10);
+    });
+
+    var minTop = _.min(nodes, function (node) {
+      return parseInt(node._uiPosition.top, 10);
+    });
+
+    var maxTop = _.max(nodes, function (node) {
+      return parseInt(node._uiPosition.top, 10);
+    });
+
+    /**
+     * Calculate the max width and height of the actual diagram by calculating the difference
+     * between the furthest nodes + margins ( 50 on each side ).
+     **/
+    var width = parseInt(maxLeft._uiPosition.left, 10) - parseInt(minLeft._uiPosition.left, 10) + 100;
+    var height = parseInt(maxTop._uiPosition.top, 10) - parseInt(minTop._uiPosition.top, 10) + 100;
+
+    var parent = this.$scope.element[0].parentElement.getBoundingClientRect();
+
+    // calculating the scales and finding the minimum scale
+    var widthScale = (parent.width - 100) / width;
+    var heightScale = (parent.height - 100) / height;
+
+    this.scale = Math.min(widthScale, heightScale);
+
+    if (this.scale > 1) {
+      this.scale = 1;
+    }
+    MyDAG1Factory.setZoom(this.scale, this.instance);
+
+
+    // This will move all nodes by the minimum left and minimum top by the container
+    // with margin of 50px
+    var offsetLeft = parseInt(minLeft._uiPosition.left, 10);
+    angular.forEach(nodes, function (node) {
+      node._uiPosition.left = (parseInt(node._uiPosition.left, 10) - offsetLeft + 50) + 'px';
+    });
+
+    var offsetTop = parseInt(minTop._uiPosition.top, 10);
+    angular.forEach(nodes, function (node) {
+      node._uiPosition.top = (parseInt(node._uiPosition.top, 10) - offsetTop + 50) + 'px';
+    });
+
+    MyDAG1Factory.getGraphMargins(this.$scope.element, nodes);
+
+    $timeout(this.instance.repaintEverything);
+    this.$scope.diagramContainer.style.top = '0px';
+    this.$scope.diagramContainer.style.left= '0px';
+    this.$scope.dagContainer.style.left = '0px';
+    this.$scope.dagContainer.style.top = '0px';
+
+  };
   this.removeNode = (nodeId) => {
     this.instance.remove(nodeId);
     endPoints = endPoints.filter(id => nodeId !== id);
@@ -136,6 +226,6 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout) {
   };
 }
 
-Ctrl.$inject = ['Redux', 'MyDagStore', 'jsPlumb', 'MyDAG1Factory', '$timeout'];
+Ctrl.$inject = ['Redux', 'MyDagStore', 'jsPlumb', 'MyDAG1Factory', '$timeout', '$scope'];
 angular.module(PKG.name + '.commons')
   .controller('MyDag1Ctrl', Ctrl);
