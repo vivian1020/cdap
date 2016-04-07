@@ -63,6 +63,7 @@ function Dag1TestCtrl(MyDagStore) {
 
   MyDagStore.subscribe(() => {
     this.state = MyDagStore.getState();
+    this.selectedNode = this.state.nodes.filter(node => node.selected)[0] && this.state.nodes.filter(node => node.selected)[0].name;
   });
 }
 Dag1TestCtrl.$inject = ['MyDagStore'];
