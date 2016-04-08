@@ -60,9 +60,10 @@
     "node-uuid": "1.4.7",
     "object-hash": "1.1.0",
     "q": "1.4.1",
+    "redux": "3.0.6",
+    "redux-undo": "^0.6.1",
     "request": "2.69.0",
     "serve-favicon": "2.3.0",
-    "redux": "3.0.6",
     "sockjs": "0.3.15"
   },
   "engines": {

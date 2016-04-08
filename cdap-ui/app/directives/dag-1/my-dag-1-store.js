@@ -1,4 +1,5 @@
 let _uuid;
+let rUndoable;
 let getNode = (action) => {
   return {
     id: action.id || _uuid.v4(),
@@ -74,15 +75,16 @@ let connections = (state = [], action={}) => {
   }
 };
 
-let Store = (Redux, uuid) => {
+let Store = (Redux, uuid, Undoable) => {
   _uuid = uuid;
+  rUndoable = Undoable;
   let combinedReducer = Redux.combineReducers({
-    nodes,
-    connections
+    nodes: rUndoable.default(nodes),
+    connections: rUndoable.default(connections)
   });
   return Redux.createStore(combinedReducer);
 };
-Store.$inject = ['Redux', 'uuid'];
+Store.$inject = ['Redux', 'uuid', 'Undoable'];
 
 angular.module(PKG.name + '.commons')
   .factory('MyDagStore', Store);

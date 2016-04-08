@@ -1,5 +1,5 @@
 
-function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
+function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undoable) {
   this.$scope = $scope;
   this.MyDagStore = MyDagStore;
   this.scale = 1.0;
@@ -12,8 +12,9 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
     left: 0
   };
 
+  let UndoableActionCreators = Undoable.ActionCreators;
   MyDagStore.subscribe(() => {
-    this.nodes = MyDagStore.getState().nodes;
+    this.nodes = MyDagStore.getState().nodes.present;
     this.nodes = this.nodes.map( node => {
       if (!node._uiPosition.left.length || !node._uiPosition.top.length){
         let position = MyDAG1Factory.getNodePosition(this.panning, node.nodeType);
@@ -84,7 +85,33 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
       });
     });
   };
+  let detachConnectionOnUndo = (connectionsFromFuture) => {
+    connectionsFromFuture.forEach( connection => {
+      var sourceNode = this.nodes.filter( node => [node.name, node.id].indexOf(connection.from) !== -1);
+      var targetNode = this.nodes.filter( node => [node.name, node.id].indexOf(connection.to) !== -1);
+      if (!sourceNode.length || !targetNode.length) {
+        return;
+      }
+      var sourceId = sourceNode[0].nodeType === 'transform' ? 'Left' + connection.from : connection.from;
+      var targetId = targetNode[0].nodeType === 'transform' ? 'Right' + connection.to : connection.to;
+      let conn = this.instance.getConnections({from: sourceId, to: targetId});
+      if (conn.length) {
+        this.instance.detach(conn[0]);
+      }
+    })
+  };
+  let cleanUpEndpoints = (nodes, endpoints) => {
+    let nodeIds = nodes.map( node => node.id);
+    return endpoints.filter(ep => {
+      if (nodeIds.indexOf(ep) === -1) {
+        this.instance.remove(ep);
+        return false;
+      }
+      return true;
+    });
+  };
   let render = () => {
+    endPoints = cleanUpEndpoints(this.nodes, endPoints);
     angular.forEach(this.nodes,  (node) => {
       if (endPoints.indexOf(node.id) !== -1) {
         return;
@@ -123,14 +150,26 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
       }
     });
     let conns = this.instance.getConnections();
-    let connectionsFromStore = this.MyDagStore.getState().connections;
+    let connectionsFromStore = this.MyDagStore.getState().connections.present;
     if (connectionsFromStore.length > conns.length) {
       renderConnectionOnInit(connectionsFromStore);
       this.cleanupGraph();
       this.fitToScreen();
+    } else if (connectionsFromStore.length < conns.length){
+      let futureState = this.MyDagStore.getState().connections.future;
+      // Just undo the immediate you just did. Undo take the present and dumps it into the future meaning you just undid something you did ergo you are going to the past.
+      detachConnectionOnUndo(futureState[futureState.length - 1]);
     }
   };
 
+  this.undo = () => {
+    MyDagStore.dispatch(UndoableActionCreators.undo());
+    $timeout(this.instance.repaintEverything);
+  };
+  this.redo = () => {
+    MyDagStore.dispatch(UndoableActionCreators.redo());
+    $timeout(this.instance.repaintEverything);
+  };
   this.zoomIn = () => {
     this.scale += 0.1;
     if (this.nodes.length === 0) { return; }
@@ -264,6 +303,6 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope) {
   };
 }
 
-Ctrl.$inject = ['Redux', 'MyDagStore', 'jsPlumb', 'MyDAG1Factory', '$timeout', '$scope'];
+Ctrl.$inject = ['Redux', 'MyDagStore', 'jsPlumb', 'MyDAG1Factory', '$timeout', '$scope', 'Undoable'];
 angular.module(PKG.name + '.commons')
   .controller('MyDag1Ctrl', Ctrl);

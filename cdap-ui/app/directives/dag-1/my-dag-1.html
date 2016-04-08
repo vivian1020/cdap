@@ -55,17 +55,23 @@
           tooltip-popup-delay="500">
     <i class="icon-clean"></i>
   </button>
-
-
-  <!-- Adding Comments -->
   <button class="btn btn-default"
-          ng-click="MyDag1Ctrl.addComment()"
+          ng-click="MyDag1Ctrl.undo()"
           ng-if="!MyDag1Ctrl.isDisabled"
-          uib-tooltip="Add Comments"
+          uib-tooltip="Undo"
           tooltip-append-to-body="true"
           tooltip-placement="left"
           tooltip-popup-delay="500">
-    <i class="fa fa-commenting"></i>
+    <i class="fa fa-undo"></i>
+  </button>
+  <button class="btn btn-default"
+          ng-click="MyDag1Ctrl.redo()"
+          ng-if="!MyDag1Ctrl.isDisabled"
+          uib-tooltip="Redo"
+          tooltip-append-to-body="true"
+          tooltip-placement="left"
+          tooltip-popup-delay="500">
+    <i class="fa fa-repeat"></i>
   </button>
 </div>
 
