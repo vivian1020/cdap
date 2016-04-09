@@ -74,13 +74,24 @@ let connections = (state = [], action={}) => {
       return state;
   }
 };
+let isDagInitialized = (state = false, action={}) =>{
+  switch(action.type) {
+    case 'INIT-DAG':
+      return true;
+    case 'RESET-INIT-DAG':
+      return false;
+    default:
+      return state;
+  }
+};
 
 let Store = (Redux, uuid, Undoable) => {
   _uuid = uuid;
   rUndoable = Undoable;
   let combinedReducer = Redux.combineReducers({
     nodes: rUndoable.default(nodes),
-    connections: rUndoable.default(connections)
+    connections: rUndoable.default(connections),
+    isDagInitialized: isDagInitialized
   });
   return Redux.createStore(combinedReducer);
 };

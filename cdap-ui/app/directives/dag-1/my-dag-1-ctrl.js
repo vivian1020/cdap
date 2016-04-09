@@ -24,7 +24,17 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
       }
       return node;
     });
-    $timeout(render);
+    let isDAGInitialized = MyDagStore.getState().isDagInitialized;
+    if (isDAGInitialized) {
+      $timeout(() => {
+        render();
+        this.cleanupGraph();
+        this.fitToScreen();
+        MyDagStore.dispatch({type: 'RESET-INIT-DAG'});
+      });
+    } else {
+      $timeout(render);
+    }
   });
   var rightEndpointSettings = angular.copy(MyDAG1Factory.getSettings(false).leftEndpoint);
   var leftEndpointSettings = angular.copy(MyDAG1Factory.getSettings(false).rightEndpoint);
@@ -71,7 +81,7 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
     });
   });
 
-  let renderConnectionOnInit = (connectionsFromStore) => {
+  let renderConnections = (connectionsFromStore) => {
     connectionsFromStore.forEach( connection => {
       var sourceNode = this.nodes.filter( node => [node.name, node.id].indexOf(connection.from) !== -1);
       var targetNode = this.nodes.filter( node => [node.name, node.id].indexOf(connection.to) !== -1);
@@ -125,7 +135,7 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
 
     let connectionsFromStore = [...this.MyDagStore.getState().connections.present];
     if (connectionsFromStore.length) {
-      renderConnectionOnInit(connectionsFromStore);
+      renderConnections(connectionsFromStore);
     }
   };
 
