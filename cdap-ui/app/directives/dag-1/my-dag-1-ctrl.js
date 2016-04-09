@@ -1,5 +1,5 @@
 
-function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undoable) {
+function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undoable, myHelpers) {
   this.$scope = $scope;
   this.MyDagStore = MyDagStore;
   this.scale = 1.0;
@@ -11,6 +11,7 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
     top: 0,
     left: 0
   };
+  this.myHelpers = myHelpers;
 
   let UndoableActionCreators = Undoable.ActionCreators;
   MyDagStore.subscribe(() => {
@@ -35,7 +36,7 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
     jsPlumb.setContainer('dag-container');
     this.instance = jsPlumb.getInstance(dagSettings);
     this.instance.bind('connection', (info, originalEvent) => {
-      if (!originalEvent) {return;}
+      if (!originalEvent) { return; }
       let conn = this.instance.getConnections().map( conn=> {
         return {from: conn.sourceId, to: conn.targetId};
       });
@@ -44,7 +45,8 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
         connections: conn
       });
     });
-    this.instance.bind('connectionDetached', () => {
+    this.instance.bind('connectionDetached', (info, originalEvent) => {
+      if (!originalEvent) { return; }
       let conn = this.instance.getConnections().map( conn=> {
         return {from: conn.sourceId, to: conn.targetId};
       });
@@ -85,20 +87,14 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
       });
     });
   };
-  let detachConnectionOnUndo = (connectionsFromFuture) => {
-    connectionsFromFuture.forEach( connection => {
-      var sourceNode = this.nodes.filter( node => [node.name, node.id].indexOf(connection.from) !== -1);
-      var targetNode = this.nodes.filter( node => [node.name, node.id].indexOf(connection.to) !== -1);
-      if (!sourceNode.length || !targetNode.length) {
-        return;
-      }
-      var sourceId = sourceNode[0].nodeType === 'transform' ? 'Left' + connection.from : connection.from;
-      var targetId = targetNode[0].nodeType === 'transform' ? 'Right' + connection.to : connection.to;
-      let conn = this.instance.getConnections({from: sourceId, to: targetId});
-      if (conn.length) {
-        this.instance.detach(conn[0]);
-      }
-    })
+  let detachConnectionOnUndo = (connection) => {
+    let conn = this.instance.getConnections().filter( c => {
+      return c.sourceId === connection.from && c.targetId === connection.to;
+    });
+    if (conn.length) {
+      console.info('Detaching: ', conn[0].sourceId, conn[0].targetId);
+      this.instance.detach(conn[0]);
+    }
   };
   let cleanUpEndpoints = (nodes, endpoints) => {
     let nodeIds = nodes.map( node => node.id);
@@ -111,12 +107,10 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
     });
   };
   let render = () => {
-    endPoints = cleanUpEndpoints(this.nodes, endPoints);
+    this.instance.deleteEveryEndpoint();
+    this.instance.detachEveryConnection();
+
     angular.forEach(this.nodes,  (node) => {
-      if (endPoints.indexOf(node.id) !== -1) {
-        return;
-      }
-      endPoints.push(node.id);
       switch(node.endpoint) {
         case 'R':
           this.instance.addEndpoint(node.id, rightEndpointSettings, {uuid: node.id});
@@ -149,26 +143,20 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
         $timeout(this.instance.repaintEverything);
       }
     });
-    let conns = this.instance.getConnections();
-    let connectionsFromStore = this.MyDagStore.getState().connections.present;
-    if (connectionsFromStore.length > conns.length) {
+
+    let connectionsFromStore = [...this.MyDagStore.getState().connections.present];
+    if (connectionsFromStore.length) {
       renderConnectionOnInit(connectionsFromStore);
-      this.cleanupGraph();
-      this.fitToScreen();
-    } else if (connectionsFromStore.length < conns.length){
-      let futureState = this.MyDagStore.getState().connections.future;
-      // Just undo the immediate you just did. Undo take the present and dumps it into the future meaning you just undid something you did ergo you are going to the past.
-      detachConnectionOnUndo(futureState[futureState.length - 1]);
     }
   };
 
   this.undo = () => {
     MyDagStore.dispatch(UndoableActionCreators.undo());
-    $timeout(this.instance.repaintEverything);
+    // $timeout(this.instance.repaintEverything);
   };
   this.redo = () => {
     MyDagStore.dispatch(UndoableActionCreators.redo());
-    $timeout(this.instance.repaintEverything);
+    // $timeout(this.instance.repaintEverything);
   };
   this.zoomIn = () => {
     this.scale += 0.1;
@@ -182,8 +170,8 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
   };
   this.cleanupGraph = () => {
     let state = MyDagStore.getState();
-    let nodes = state.nodes;
-    let connections = state.connections;
+    let nodes = state.nodes.present;
+    let connections = state.connections.present;
 
     var graph = MyDAG1Factory.getGraphLayout(nodes, connections);
     angular.forEach(nodes, (node) => {
@@ -205,7 +193,7 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
   };
   this.fitToScreen = () => {
     let state = MyDagStore.getState();
-    let nodes = state.nodes;
+    let nodes = state.nodes.present;
     if (nodes.length === 0) { return; }
 
     /**
@@ -287,7 +275,6 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
     });
   };
   this.onNodeClick = (nodeId) => {
-    console.log('isCanvasDragged', this.canvasIsDragged);
     if (this.canvasIsDragged) {
       this.canvasIsDragged = false;
       return;
@@ -303,6 +290,6 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
   };
 }
 
-Ctrl.$inject = ['Redux', 'MyDagStore', 'jsPlumb', 'MyDAG1Factory', '$timeout', '$scope', 'Undoable'];
+Ctrl.$inject = ['Redux', 'MyDagStore', 'jsPlumb', 'MyDAG1Factory', '$timeout', '$scope', 'Undoable', 'myHelpers'];
 angular.module(PKG.name + '.commons')
   .controller('MyDag1Ctrl', Ctrl);
