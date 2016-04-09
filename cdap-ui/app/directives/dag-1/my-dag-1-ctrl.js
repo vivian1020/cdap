@@ -58,7 +58,6 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
 
     // Making canvas draggable
     this.secondInstance = jsPlumb.getInstance();
-
     this.secondInstance.draggable('diagram-container', {
       start: () => {},
       stop: (e) => {
@@ -72,7 +71,6 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
     });
   });
 
-  let endPoints = [];
   let renderConnectionOnInit = (connectionsFromStore) => {
     connectionsFromStore.forEach( connection => {
       var sourceNode = this.nodes.filter( node => [node.name, node.id].indexOf(connection.from) !== -1);
@@ -85,25 +83,6 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
       this.instance.connect({
         uuids: [sourceId, targetId]
       });
-    });
-  };
-  let detachConnectionOnUndo = (connection) => {
-    let conn = this.instance.getConnections().filter( c => {
-      return c.sourceId === connection.from && c.targetId === connection.to;
-    });
-    if (conn.length) {
-      console.info('Detaching: ', conn[0].sourceId, conn[0].targetId);
-      this.instance.detach(conn[0]);
-    }
-  };
-  let cleanUpEndpoints = (nodes, endpoints) => {
-    let nodeIds = nodes.map( node => node.id);
-    return endpoints.filter(ep => {
-      if (nodeIds.indexOf(ep) === -1) {
-        this.instance.remove(ep);
-        return false;
-      }
-      return true;
     });
   };
   let render = () => {
@@ -152,11 +131,9 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
 
   this.undo = () => {
     MyDagStore.dispatch(UndoableActionCreators.undo());
-    // $timeout(this.instance.repaintEverything);
   };
   this.redo = () => {
     MyDagStore.dispatch(UndoableActionCreators.redo());
-    // $timeout(this.instance.repaintEverything);
   };
   this.zoomIn = () => {
     this.scale += 0.1;
@@ -268,7 +245,6 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
   };
   this.removeNode = (nodeId) => {
     this.instance.remove(nodeId);
-    endPoints = endPoints.filter(id => nodeId !== id);
     MyDagStore.dispatch({
       type: 'REMOVE-NODE',
       id: nodeId
