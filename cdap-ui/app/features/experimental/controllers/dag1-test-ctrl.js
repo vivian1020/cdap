@@ -1,4 +1,4 @@
-function Dag1TestCtrl(MyDagStore, $timeout) {
+function Dag1TestCtrl(MyDagStore) {
   this.addNode = (type) => {
     switch(type) {
       case 'source':
@@ -60,12 +60,7 @@ function Dag1TestCtrl(MyDagStore, $timeout) {
   this.badgeCssClass = 'badge-warning';
   this.badgeTooltip = 'Please check node config';
   this.tooltipCssClass = 'tooltip-warning';
-
-  MyDagStore.subscribe(() => {
-    this.state = MyDagStore.getState();
-    let selectedNode = this.state.nodes.present.filter(node => node.selected);
-    this.selectedNode = selectedNode[0] && selectedNode[0].name;
-  });
+  
   // let nodes = [
   //   {
   //     'id': 'ab78832d-7962-420a-80ac-9d1de571cafc',
