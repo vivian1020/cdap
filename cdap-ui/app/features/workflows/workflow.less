@@ -33,6 +33,40 @@ body.state-workflows {
     .btn-lg .fa-eject {
       .rotate(90deg);
     }
+    my-dag1 {
+      width: 100%;
+      height: 60vh;
+
+      .box {
+        &.generic{
+          &.source {
+            color: #48c038;
+            // left: 10vw;
+            .node {
+              border: 3px solid #48c038;
+            }
+          }
+          &.sink {
+            color: #8367df;
+            .node {
+              border: 3px solid #8367df;
+            }
+          }
+          &.transform {
+            color: #4586f3;
+            left: 30vw;
+            .node {
+              border: 3px solid #4586f3;
+            }
+          }
+          .fa {
+            &:not(.fa-close) {
+              font-size: 20px;
+            }
+          }
+        }
+      }
+    }
   }
 
   .schedule-heading {

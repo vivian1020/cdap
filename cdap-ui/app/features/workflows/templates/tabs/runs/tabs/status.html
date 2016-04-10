@@ -16,13 +16,14 @@
 
 <div class="sr-only" id="sidepanel-anchor"></div>
 <div ng-controller="WorkflowsRunsStatusController as StatusController">
-  <my-workflow-graph data-model="StatusController.data"
+  <!-- <my-workflow-graph data-model="StatusController.data"
                      data-on-change-flag="StatusController.onChangeFlag"
                      data-click-context="StatusController"
                      data-click="StatusController.workflowProgramClick"
                      data-token-click="StatusController.workflowTokenClick"
-                     data-workflow-status="StatusController.runStatus"></my-workflow-graph>
+                     data-workflow-status="StatusController.runStatus"></my-workflow-graph> -->
 
+  <my-dag1></my-dag1>
 
   <my-pageslide open="StatusController.showSidepanel" width="600">
     <div class="left-column" ng-class="{ 'hidden': !StatusController.showSidepanel }" ng-click="StatusController.showSidepanel = !StatusController.showSidepanel">

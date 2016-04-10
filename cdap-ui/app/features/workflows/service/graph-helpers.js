@@ -142,7 +142,7 @@ angular.module(`${PKG.name}.services`)
         nodeType: 'ACTION',
         nodeId: '',
         program: {
-          programName: 'Start'
+          programName: 'Start',
         }
       });
 
@@ -157,11 +157,62 @@ angular.module(`${PKG.name}.services`)
       });
       return nodes;
     }
+    function getDAGConnections(edges) {
+      return edges.map( edge => {
+        return {
+          from: edge.sourceName,
+          to: edge.targetName
+        };
+      });
+    }
 
+    function getDAGNodes(nodes) {
+      let getEndPoint = (type) => {
+        switch(type) {
+          case 'START':
+            return 'R';
+          case 'END':
+            return 'L';
+          default:
+            return 'LR';
+        }
+      };
+      let getIcon = (program) => {
+        switch(program.programType) {
+          case 'MAPREDUCE':
+            return 'icon-mapreduce';
+          case 'SPARK':
+            return 'icon-spark';
+          default:
+            return program.programName === 'Start'? 'fa-caret-right': 'fa-caret-left';
+        }
+      };
+      let getIconCssClass = (program) => {
+        switch(program.programType) {
+          case 'MAPREDUCE':
+          case 'SPARK':
+            return 'transform';
+          default:
+            return program.programName === 'Start'? 'source': 'sink';
+        }
+      };
+      return nodes.map( node => {
+        return {
+          id: node.name,
+          name: node.name,
+          endpoint: getEndPoint(node.type),
+          icon: getIcon(node.program),
+          cssClass: getIconCssClass(node.program),
+          nodeType: getIconCssClass(node.program)
+        };
+      });
+    }
     return {
       convertNodesToEdges,
       expandNodes,
-      addStartAndEnd
+      addStartAndEnd,
+      getDAGNodes,
+      getDAGConnections
     };
 
   });

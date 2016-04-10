@@ -19,7 +19,7 @@ var runparams = {},
     params;
 
 class WorkflowsRunsStatusController {
-  constructor($state, $scope, myWorkFlowApi, $filter, GraphHelpers, MyCDAPDataSource, myMapreduceApi, mySparkApi) {
+  constructor($state, $scope, myWorkFlowApi, $filter, GraphHelpers, MyCDAPDataSource, myMapreduceApi, mySparkApi, MyDagStore) {
     this.dataSrc = new MyCDAPDataSource($scope);
     this.$state = $state;
     this.$scope = $scope;
@@ -50,6 +50,18 @@ class WorkflowsRunsStatusController {
       metrics: {}
     };
 
+    $scope.$on('$destroy', () => {
+      console.log('destroying');
+      MyDagStore.dispatch({
+        type: 'SET-NODES',
+        nodes: []
+      });
+      MyDagStore.dispatch({
+        type: 'SET-CONNECTIONS',
+        connections: []
+      });
+    });
+
     this.myWorkFlowApi.get(params)
       .$promise
       .then( res => {
@@ -68,14 +80,32 @@ class WorkflowsRunsStatusController {
           }, item);
         });
 
-        this.data['nodes'] = nodes;
-        this.data['edges'] = edges;
-        this.onChangeFlag += 1;
-        var programs = [];
-        angular.forEach(res.nodes, value => programs.push(value.program));
+        this.nodes = nodes;
+        this.edges = edges;
+        nodes = this.GraphHelpers.getDAGNodes(nodes);
+        edges = this.GraphHelpers.getDAGConnections(edges);
 
-        this.actions = programs;
-
+        MyDagStore.dispatch({
+          type: 'SET-NODES',
+          nodes: nodes
+        });
+        MyDagStore.dispatch({
+          type: 'SET-CONNECTIONS',
+          connections: edges
+        });
+        MyDagStore.dispatch({ type: 'DISABLE-DAG' });
+        MyDagStore.dispatch({ type: 'INIT-DAG' });
+        MyDagStore.subscribe( () => {
+          let nodes = MyDagStore.getState().nodes.present;
+          let selectedNode = nodes.filter( n => n.selected);
+          if (selectedNode.length) {
+            let matchNode = this.nodes.filter( node => node.name === selectedNode[0].id);
+            if (matchNode.length) {
+              this.workflowProgramClick(matchNode[0]);
+              MyDagStore.dispatch({type: 'RESET-SELECTED'});
+            }
+          }
+        });
         // This needs to be rethought.
         this.pollNodes();
 
@@ -233,6 +263,6 @@ class WorkflowsRunsStatusController {
 
 }
 
-WorkflowsRunsStatusController.$inject = ['$state', '$scope', 'myWorkFlowApi', '$filter', 'GraphHelpers', 'MyCDAPDataSource', 'myMapreduceApi', 'mySparkApi'];
+WorkflowsRunsStatusController.$inject = ['$state', '$scope', 'myWorkFlowApi', '$filter', 'GraphHelpers', 'MyCDAPDataSource', 'myMapreduceApi', 'mySparkApi', 'MyDagStore'];
 angular.module(`${PKG.name}.feature.workflows`)
   .controller('WorkflowsRunsStatusController', WorkflowsRunsStatusController);
