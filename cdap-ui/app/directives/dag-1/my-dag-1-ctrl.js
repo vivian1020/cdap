@@ -25,6 +25,7 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
       return node;
     });
     let isDAGInitialized = MyDagStore.getState().isDagInitialized;
+    this.isDisabled = MyDagStore.getState().isDisabled;
     if (isDAGInitialized) {
       $timeout(() => {
         render();
@@ -115,23 +116,34 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
       }
     });
     var nodes = document.querySelectorAll('.box');
-    this.instance.draggable(nodes, {
-      start:  () => {this.canvasIsDragged = true; },
-      stop: (dragEndEvent) => {
-        var config = {
-          _uiPosition: {
-            top: dragEndEvent.el.style.top,
-            left: dragEndEvent.el.style.left
-          }
-        };
-        this.MyDagStore.dispatch({
-          type: 'UPDATE-NODE',
-          id: dragEndEvent.el.id,
-          config: config
-        });
-        $timeout(this.instance.repaintEverything);
+
+    if (!this.isDisabled) {
+      this.instance.draggable(nodes, {
+        start:  () => {this.canvasIsDragged = true; },
+        stop: (dragEndEvent) => {
+          var config = {
+            _uiPosition: {
+              top: dragEndEvent.el.style.top,
+              left: dragEndEvent.el.style.left
+            }
+          };
+          this.MyDagStore.dispatch({
+            type: 'UPDATE-NODE',
+            id: dragEndEvent.el.id,
+            config: config
+          });
+          $timeout(this.instance.repaintEverything);
+        }
+      });
+    } else {
+      try {
+        jsPlumb.setDraggable(nodes, false);
+        jsPlumb.setDraggable('diagram-container', false);
+        console.log('Successfully disabled drag');
+      } catch(e) {
+        console.log('Unable to disable draggle on nodes. angular render timing issue');
       }
-    });
+    }
 
     let connectionsFromStore = [...this.MyDagStore.getState().connections.present];
     if (connectionsFromStore.length) {

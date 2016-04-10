@@ -56,10 +56,7 @@ let nodes = (state = [], action = {}) => {
       break;
     case 'SET-NODES':
       let nodes = action.nodes.map(getNode);
-      return [
-        ...state,
-        ...nodes
-      ];
+      return nodes;
     default:
       return state;
   }
@@ -67,9 +64,7 @@ let nodes = (state = [], action = {}) => {
 let connections = (state = [], action={}) => {
   switch(action.type) {
     case 'SET-CONNECTIONS':
-      return [
-        ...action.connections
-      ];
+      return action.connections;
     default:
       return state;
   }
@@ -84,6 +79,16 @@ let isDagInitialized = (state = false, action={}) =>{
       return state;
   }
 };
+let isDisabled = (state = false, action = {}) => {
+  switch(action.type) {
+    case 'DISABLE-DAG':
+      return true;
+    case 'ENABLE-DAG':
+      return false;
+    default:
+      return state;
+  }
+};
 
 let Store = (Redux, uuid, Undoable) => {
   _uuid = uuid;
@@ -91,7 +96,8 @@ let Store = (Redux, uuid, Undoable) => {
   let combinedReducer = Redux.combineReducers({
     nodes: rUndoable.default(nodes),
     connections: rUndoable.default(connections),
-    isDagInitialized: isDagInitialized
+    isDagInitialized: isDagInitialized,
+    isDisabled: isDisabled
   });
   return Redux.createStore(combinedReducer);
 };

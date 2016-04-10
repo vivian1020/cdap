@@ -82,7 +82,7 @@
              class="box generic {{node.cssClass}}"
              id="{{node.id}}"
              ng-click="MyDag1Ctrl.onNodeClick(node.id, $index)"
-             ng-class="{'selected': node.selected}"
+             ng-class="{'selected': node.selected && !MyDag1Ctrl.isDisabled}"
              ng-style="node._uiPosition"
              >
         <div class="node">
@@ -95,7 +95,8 @@
               </span>
             </div>
           </div>
-          <div class="fa fa-close"
+          <div ng-if="!MyDag1Ctrl.isDisabled"
+               class="fa fa-close"
                ng-click="MyDag1Ctrl.removeNode(node.id)">
           </div>
           <div class="icon fa {{node.icon}}"></div>
