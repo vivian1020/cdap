@@ -27,6 +27,36 @@ body.state-flows {
     h3 {
       font-weight: 400;
     }
+
+    my-dag1 {
+      width: 100%;
+      height: 60vh;
+
+      .box {
+        &.generic{
+          &.source {
+            color: #48c038;
+            // left: 10vw;
+            .node {
+              border: 3px solid #48c038;
+            }
+          }
+          &.sink {
+            color: #8367df;
+            .node {
+              border: 3px solid #8367df;
+            }
+          }
+          &.transform {
+            color: #4586f3;
+            left: 30vw;
+            .node {
+              border: 3px solid #4586f3;
+            }
+          }
+        }
+      }
+    }
   }
   textarea.flow-injector-input {
     width: 100%;

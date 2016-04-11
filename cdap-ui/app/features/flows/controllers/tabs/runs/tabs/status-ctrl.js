@@ -15,7 +15,7 @@
  */
 
  class FlowsRunDetailStatusController {
-   constructor($state, $scope, MyCDAPDataSource, myHelpers, FlowDiagramData, $timeout, MyMetricsQueryHelper, myFlowsApi) {
+   constructor($state, $scope, MyCDAPDataSource, myHelpers, FlowDiagramData, $timeout, MyMetricsQueryHelper, myFlowsApi, FlowDiagramHelper, MyDagStore) {
      this.dataSrc = new MyCDAPDataSource($scope);
      this.$state = $state;
      this.$scope = $scope;
@@ -30,10 +30,21 @@
     FlowDiagramData.fetchData($state.params.appId, $state.params.programId)
       .then( (data) => {
         this.data = data;
+        this.data.connections = FlowDiagramHelper.getDAGConnections(data.edges);
+        this.data.nodes = FlowDiagramHelper.getDAGNodes(data.nodes, this.data.connections[this.data.connections.length - 1].to);
+        MyDagStore.dispatch({
+          type: 'SET-NODES',
+          nodes: this.data.nodes
+        });
+        MyDagStore.dispatch({
+          type: 'SET-CONNECTIONS',
+          connections: this.data.connections
+        });
+        MyDagStore.dispatch({ type: 'DISABLE-DAG' });
+        MyDagStore.dispatch({ type: 'INIT-DAG' });
         this.data.metrics = {};
         this.data.instances = {};
         this.pollMetrics();
-        this.onChangeFlag +=1;
       });
     $scope.$on('$destroy', FlowDiagramData.reset.bind(FlowDiagramData));
    }
@@ -114,7 +125,7 @@
 
 }
 
-FlowsRunDetailStatusController.$inject = ['$state', '$scope', 'MyCDAPDataSource', 'myHelpers', 'FlowDiagramData', '$timeout', 'MyMetricsQueryHelper', 'myFlowsApi'];
+FlowsRunDetailStatusController.$inject = ['$state', '$scope', 'MyCDAPDataSource', 'myHelpers', 'FlowDiagramData', '$timeout', 'MyMetricsQueryHelper', 'myFlowsApi', 'FlowDiagramHelper', 'MyDagStore'];
 
 angular.module(`${PKG.name}.feature.flows`)
   .controller('FlowsRunDetailStatusController', FlowsRunDetailStatusController);
