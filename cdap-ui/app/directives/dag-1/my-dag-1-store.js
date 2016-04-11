@@ -25,7 +25,7 @@ let nodes = (state = [], action = {}) => {
     case 'ADD-NODE':
       return [
         ...state,
-        getNode(action)
+        getNode(action.node)
       ];
     case 'REMOVE-NODE':
       return state.filter(node => node.id !== action.id);
