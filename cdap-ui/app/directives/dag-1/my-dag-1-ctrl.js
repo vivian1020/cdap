@@ -139,9 +139,9 @@ function Ctrl (Redux, MyDagStore, jsPlumb, MyDAG1Factory, $timeout, $scope, Undo
       try {
         jsPlumb.setDraggable(nodes, false);
         jsPlumb.setDraggable('diagram-container', false);
-        console.log('Successfully disabled drag');
+        // console.log('Successfully disabled drag');
       } catch(e) {
-        console.log('Unable to disable draggle on nodes. angular render timing issue');
+        // console.log('Unable to disable draggle on nodes. angular render timing issue');
       }
     }
 
