@@ -15,7 +15,7 @@
  */
 
 class HydratorPlusPlusLeftPanelCtrl {
-  constructor($scope, $stateParams, rVersion, GLOBALS, HydratorPlusPlusLeftPanelStore, HydratorPlusPlusPluginActions, HydratorPlusPlusConfigStore, HydratorPlusPlusConfigActions, DAGPlusPlusFactory, DAGPlusPlusNodesActionsFactory, NonStorePipelineErrorFactory, $uibModal, myAlertOnValium, $state, $q, rArtifacts, $timeout, PluginTemplatesDirActions, HydratorPlusPlusOrderingFactory) {
+  constructor($scope, $stateParams, rVersion, GLOBALS, HydratorPlusPlusLeftPanelStore, HydratorPlusPlusPluginActions, HydratorPlusPlusConfigStore, HydratorPlusPlusConfigActions, DAGPlusPlusFactory, MyDagStore, NonStorePipelineErrorFactory, $uibModal, myAlertOnValium, $state, $q, rArtifacts, $timeout, PluginTemplatesDirActions, HydratorPlusPlusOrderingFactory, uuid) {
     this.$state = $state;
     this.$scope = $scope;
     this.$stateParams = $stateParams;
@@ -25,7 +25,7 @@ class HydratorPlusPlusLeftPanelCtrl {
     this.GLOBALS = GLOBALS;
     this.HydratorPlusPlusConfigStore = HydratorPlusPlusConfigStore;
     this.DAGPlusPlusFactory = DAGPlusPlusFactory;
-    this.DAGPlusPlusNodesActionsFactory = DAGPlusPlusNodesActionsFactory;
+    this.MyDagStore = MyDagStore;
     this.NonStorePipelineErrorFactory = NonStorePipelineErrorFactory;
     this.PluginTemplatesDirActions = PluginTemplatesDirActions;
     this.rVersion = rVersion;
@@ -33,6 +33,7 @@ class HydratorPlusPlusLeftPanelCtrl {
     this.myAlertOnValium = myAlertOnValium;
     this.$q = $q;
     this.HydratorPlusPlusOrderingFactory = HydratorPlusPlusOrderingFactory;
+    this.uuid = uuid;
 
     this.pluginsMap = [];
     this.sourcesToVersionMap = {};
@@ -288,19 +289,44 @@ class HydratorPlusPlusLeftPanelCtrl {
   }
   addPluginToCanvas(event, node) {
     var item = this.HydratorPlusPlusLeftPanelStore.getSpecificPluginVersion(node);
-    this.DAGPlusPlusNodesActionsFactory.resetSelectedNode();
+    this.MyDagStore.dispatch({type: 'RESET-SELECTED'});
     this.HydratorPlusPlusLeftPanelStore.updatePluginDefaultVersion(item);
 
-    let name = item.name || item.pluginTemplate;
-
-    let filteredNodes = this.HydratorPlusPlusConfigStore
-                    .getNodes()
-                    .filter( node => (node.plugin.label ? node.plugin.label.includes(name) : false) );
+    let configStoreNodes = this.HydratorPlusPlusConfigStore
+                    .getNodes();
+                    // .filter( node => (node.plugin.label ? node.plugin.label.includes(name) : false) );
     let config;
+    let getEndpoint = (nodeType) => {
+      switch(nodeType) {
+        case 'batchsource':
+        case 'realtimesource':
+          return 'R';
+        case 'batchsink':
+        case 'realtimesink':
+        case 'sparksink':
+          return 'L';
+        default:
+          return 'LR';
+      }
+    };
+    let getNodeType = (nodeType) => {
+      switch(nodeType) {
+        case 'batchsource':
+        case 'realtimesource':
+          return 'source';
+        case 'batchsink':
+        case 'realtimesink':
+        case 'sparksink':
+          return 'sink';
+        default:
+          return 'transform';
+      }
+    };
     if (item.pluginTemplate) {
       config = {
         plugin: {
-          label: (filteredNodes.length > 0 ? item.pluginTemplate + (filteredNodes.length+1): item.pluginTemplate),
+          // label: (filteredNodes.length > 0 ? item.pluginTemplate + (filteredNodes.length+1): item.pluginTemplate),
+          label: item.pluginTemplate,
           name: item.pluginName,
           artifact: item.artifact,
           properties: item.properties,
@@ -314,22 +340,48 @@ class HydratorPlusPlusLeftPanelCtrl {
       };
     } else {
       config = {
-        plugin: {
-          label: (filteredNodes.length > 0 ? item.name + (filteredNodes.length+1): item.name),
-          artifact: item.artifact,
-          name: item.name,
-          properties: {}
-        },
+        id: this.uuid.v4(),
+        name: item.name,
+        endpoint: getEndpoint(item.type),
         icon: item.icon,
-        description: item.description,
-        type: item.type,
-        warning: true
+        cssClass: getNodeType(item.type),
+        nodeType: getNodeType(item.type)
+        // plugin: {
+        //   label: (filteredNodes.length > 0 ? item.name + (filteredNodes.length+1): item.name),
+        //   artifact: item.artifact,
+        //   name: item.name,
+        //   properties: {}
+        // },
+        // icon: item.icon,
+        // description: item.description,
+        // type: item.type,
+        // warning: true
       };
     }
-    this.DAGPlusPlusNodesActionsFactory.addNode(config);
+    this.MyDagStore.dispatch({
+      type: 'ADD-NODE',
+      node: config
+    });
+    this.HydratorPlusPlusConfigStore.setNodes(
+      [
+        ...configStoreNodes,
+        ...[
+          angular.extend({
+            type: item.type,
+            plugin: {
+              label: item.name,
+              name: item.name,
+              artifact: item.artifact,
+              type: item.type,
+              properties: {}
+            }
+          }, config)
+        ]
+      ]
+    );
   }
 }
 
-HydratorPlusPlusLeftPanelCtrl.$inject = ['$scope', '$stateParams', 'rVersion', 'GLOBALS', 'HydratorPlusPlusLeftPanelStore', 'HydratorPlusPlusPluginActions', 'HydratorPlusPlusConfigStore', 'HydratorPlusPlusConfigActions', 'DAGPlusPlusFactory', 'DAGPlusPlusNodesActionsFactory', 'NonStorePipelineErrorFactory',  '$uibModal', 'myAlertOnValium', '$state', '$q', 'rArtifacts', '$timeout', 'PluginTemplatesDirActions', 'HydratorPlusPlusOrderingFactory'];
+HydratorPlusPlusLeftPanelCtrl.$inject = ['$scope', '$stateParams', 'rVersion', 'GLOBALS', 'HydratorPlusPlusLeftPanelStore', 'HydratorPlusPlusPluginActions', 'HydratorPlusPlusConfigStore', 'HydratorPlusPlusConfigActions', 'DAGPlusPlusFactory', 'MyDagStore', 'NonStorePipelineErrorFactory',  '$uibModal', 'myAlertOnValium', '$state', '$q', 'rArtifacts', '$timeout', 'PluginTemplatesDirActions', 'HydratorPlusPlusOrderingFactory', 'uuid'];
 angular.module(PKG.name + '.feature.hydratorplusplus')
   .controller('HydratorPlusPlusLeftPanelCtrl', HydratorPlusPlusLeftPanelCtrl);

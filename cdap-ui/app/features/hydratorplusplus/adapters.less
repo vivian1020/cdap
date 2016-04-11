@@ -47,7 +47,8 @@ body.theme-cdap {
       }
     }
 
-    my-dag-plus {
+    // my-dag-plus {
+    my-dag1 {
       width: 100%;
       // Dag-Height 60% on smaller screen
       height: 60vh;
@@ -59,6 +60,100 @@ body.theme-cdap {
       }
       @media (min-height: 800px) {
         height: 40vh;
+      }
+
+      .my-js-dag {
+        overflow: auto;
+
+        .box {
+          &.generic {
+            &.source {
+              color: #48c038;
+              // left: 10vw;
+              .node {
+                border: 3px solid #48c038;
+              }
+            }
+            &.sink {
+              color: #8367df;
+              .node {
+                border: 3px solid #8367df;
+              }
+            }
+            &.transform {
+              color: #4586f3;
+              left: 30vw;
+              .node {
+                border: 3px solid #4586f3;
+              }
+            }
+            &.selected {
+              &.source {
+                .node {
+                  background-color: #48c038;
+                  border-width: 6px;
+                }
+              }
+              &.transform {
+                .node {
+                  background-color: #4586f3;
+                  border-width: 6px;
+                }
+              }
+              &.sink {
+                .node {
+                  background-color: #8367df;
+                  border-width: 6px;
+                }
+              }
+              .icon.fa, .fa.fa-close {
+                color: white;
+              }
+              .icon.fa {
+                line-height: 34px;
+              }
+              .fa.fa-close {
+                top: 3px;
+              }
+            }
+          }
+          .node {
+            .badge-warning {
+              .badge-notification {
+                .badge {
+                  background: #f4b400;
+                }
+              }
+            }
+            .badge-danger {
+              .badge-notification {
+                .badge {
+                  background: red;
+                }
+              }
+            }
+          }
+        }
+
+        .jsplumb-endpoint {
+          svg {
+            overflow: visible;
+          }
+          circle {
+            fill: white;
+            r: 2px;
+            stroke-width: 8px;
+          }
+          &-anchor-leftAnchor circle {
+            stroke: #48c038;
+          }
+          &-anchor-leftRightAnchor circle {
+            stroke: #4586f3;
+          }
+          &-anchor-rightAnchor circle {
+            stroke: #8367df;
+          }
+        }
       }
     }
 

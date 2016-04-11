@@ -15,12 +15,13 @@
  */
 
 class HydratorPlusPlusCreateCanvasCtrl {
-  constructor(HydratorPlusPlusBottomPanelStore, DAGPlusPlusNodesStore, DAGPlusPlusNodesActionsFactory, HydratorPlusPlusConfigStore, HydratorPlusPlusNodeConfigActions, HydratorPlusPlusHydratorService) {
-    this.DAGPlusPlusNodesStore = DAGPlusPlusNodesStore;
+  constructor(HydratorPlusPlusBottomPanelStore, MyDagStore, DAGPlusPlusNodesActionsFactory, HydratorPlusPlusConfigStore, HydratorPlusPlusNodeConfigActions, HydratorPlusPlusHydratorService, HydratorPlusPlusLeftPanelStore) {
+    this.MyDagStore = MyDagStore;
     this.HydratorPlusPlusConfigStore = HydratorPlusPlusConfigStore;
     this.HydratorPlusPlusNodeConfigActions = HydratorPlusPlusNodeConfigActions;
     this.DAGPlusPlusNodesActionsFactory = DAGPlusPlusNodesActionsFactory;
     this.HydratorPlusPlusHydratorService = HydratorPlusPlusHydratorService;
+    this.HydratorPlusPlusLeftPanelStore = HydratorPlusPlusLeftPanelStore;
 
     this.setState = () => {
       this.state = {
@@ -33,46 +34,39 @@ class HydratorPlusPlusCreateCanvasCtrl {
     this.nodes = [];
     this.connections = [];
 
-    DAGPlusPlusNodesStore.registerOnChangeListener(this.updateNodesAndConnections.bind(this));
+    // Listening for connectionss
+    MyDagStore.subscribe(this.setStateAndUpdateConfigStore.bind(this));
+
   }
 
   setStateAndUpdateConfigStore() {
-    this.nodes = this.DAGPlusPlusNodesStore.getNodes();
-    this.connections = this.DAGPlusPlusNodesStore.getConnections();
-    this.HydratorPlusPlusConfigStore.setNodes(this.nodes);
+    // this.nodes = this.HydratorPlusPlusConfigStore.getNodes();
+    this.connections = this.MyDagStore.getState().connections.present;
     this.HydratorPlusPlusConfigStore.setConnections(this.connections);
-    this.HydratorPlusPlusConfigStore.setComments(this.DAGPlusPlusNodesStore.getComments());
-  }
 
-  updateNodesAndConnections() {
-    var activeNode = this.DAGPlusPlusNodesStore.getActiveNodeId();
-    if (!activeNode) {
-      this.deleteNode();
+    let nodes = this.MyDagStore.getState().nodes.present;
+    let isNodeSelected = nodes.filter( node => node.selected);
+    if (isNodeSelected.length) {
+      this.setActiveNode(isNodeSelected[0]);
     } else {
-      this.setActiveNode();
+      this.deleteNode();
     }
   }
 
-  setActiveNode() {
-    var nodeId = this.DAGPlusPlusNodesStore.getActiveNodeId();
+  setActiveNode(selectedNode) {
+    var nodeId = selectedNode.id;
     if (!nodeId) {
       return;
     }
     var pluginNode;
-    var nodeFromNodesStore;
-    var nodeFromConfigStore = this.HydratorPlusPlusConfigStore.getNodes().filter( node => node.name === nodeId );
+    var nodeFromConfigStore = this.HydratorPlusPlusConfigStore.getNodes().filter( node => node.id === nodeId );
     if (nodeFromConfigStore.length) {
       pluginNode = nodeFromConfigStore[0];
-    } else {
-      nodeFromNodesStore = this.DAGPlusPlusNodesStore.getNodes().filter(node => node.name === nodeId);
-      pluginNode = nodeFromNodesStore[0];
     }
     this.HydratorPlusPlusNodeConfigActions.choosePlugin(pluginNode);
-    this.setStateAndUpdateConfigStore();
   }
 
   deleteNode() {
-    this.setStateAndUpdateConfigStore();
     this.HydratorPlusPlusNodeConfigActions.removePlugin();
   }
 
@@ -82,6 +76,6 @@ class HydratorPlusPlusCreateCanvasCtrl {
 }
 
 
-HydratorPlusPlusCreateCanvasCtrl.$inject = ['HydratorPlusPlusBottomPanelStore', 'DAGPlusPlusNodesStore', 'DAGPlusPlusNodesActionsFactory', 'HydratorPlusPlusConfigStore', 'HydratorPlusPlusNodeConfigActions', 'HydratorPlusPlusHydratorService'];
+HydratorPlusPlusCreateCanvasCtrl.$inject = ['HydratorPlusPlusBottomPanelStore', 'MyDagStore', 'DAGPlusPlusNodesActionsFactory', 'HydratorPlusPlusConfigStore', 'HydratorPlusPlusNodeConfigActions', 'HydratorPlusPlusHydratorService', 'HydratorPlusPlusLeftPanelStore'];
 angular.module(PKG.name + '.feature.hydratorplusplus')
   .controller('HydratorPlusPlusCreateCanvasCtrl', HydratorPlusPlusCreateCanvasCtrl);

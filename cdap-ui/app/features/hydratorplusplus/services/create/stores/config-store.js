@@ -72,7 +72,7 @@ class HydratorPlusPlusConfigStore {
       this.setArtifact(this.state.artifact);
       this.setEngine(this.state.config.engine);
     }
-    this.__defaultState = angular.copy(this.state);
+    this.__defaultState = Object.assign({}, this.state);
   }
   getDefaults() {
     return this.__defaultState;
@@ -91,7 +91,7 @@ class HydratorPlusPlusConfigStore {
     this.state = state;
   }
   getState() {
-    return angular.copy(this.state);
+    return Object.assign({}, this.state);
   }
   getDraftId() {
     return this.state.__ui__.draftId;
@@ -115,7 +115,7 @@ class HydratorPlusPlusConfigStore {
     var config = this.getDefaultConfig();
     var nodesMap = {};
     this.state.__ui__.nodes.forEach(function(n) {
-      nodesMap[n.name] = angular.copy(n);
+      nodesMap[n.id] = angular.copy(n);
     });
     // Strip out schema property of the plugin if format is clf or syslog
     let stripFormatSchemas = (formatProp, outputSchemaProp, properties) => {
@@ -170,14 +170,14 @@ class HydratorPlusPlusConfigStore {
         fromConnectionName = nodesMap[connection.from].plugin.label;
         addPluginToConfig(nodesMap[connection.from], connection.from);
       } else {
-        fromConnectionName = this.state.__ui__.nodes.filter( n => n.name === connection.from)[0];
+        fromConnectionName = this.state.__ui__.nodes.filter( n => n.id === connection.from)[0];
         fromConnectionName = fromConnectionName.plugin.label;
       }
       if (nodesMap[connection.to]) {
         toConnectionName = nodesMap[connection.to].plugin.label;
         addPluginToConfig(nodesMap[connection.to], connection.to);
       } else {
-        toConnectionName = this.state.__ui__.nodes.filter( n => n.name === connection.to)[0];
+        toConnectionName = this.state.__ui__.nodes.filter( n => n.id === connection.to)[0];
         toConnectionName = toConnectionName.plugin.label;
       }
       connection.from = fromConnectionName;

@@ -16,7 +16,7 @@
 
 class HydratorPlusPlusStudioCtrl {
   // Holy cow. Much DI. Such angular.
-  constructor(HydratorPlusPlusLeftPanelStore, HydratorPlusPlusConfigActions, $stateParams, rConfig, $rootScope, $scope, HydratorPlusPlusDetailNonRunsStore, HydratorPlusPlusNodeConfigStore, DAGPlusPlusNodesActionsFactory, HydratorPlusPlusHydratorService, HydratorPlusPlusConsoleActions, rSelectedArtifact, rArtifacts, myLocalStorage) {
+  constructor(HydratorPlusPlusLeftPanelStore, HydratorPlusPlusConfigActions, $stateParams, rConfig, $rootScope, $scope, HydratorPlusPlusDetailNonRunsStore, HydratorPlusPlusNodeConfigStore, DAGPlusPlusNodesActionsFactory, HydratorPlusPlusHydratorService, HydratorPlusPlusConsoleActions, rSelectedArtifact, rArtifacts, myLocalStorage, MyDagStore, $timeout, HydratorPlusPlusConfigStore) {
     // This is required because before we fireup the actions related to the store, the store has to be initialized to register for any events.
 
     this.myLocalStorage = myLocalStorage;
@@ -59,8 +59,56 @@ class HydratorPlusPlusStudioCtrl {
           connections : configJson.connections
         };
       }
-
-      DAGPlusPlusNodesActionsFactory.createGraphFromConfig(configJson.__ui__.nodes, configJson.config.connections, configJson.config.comments);
+      let getEndpoint = (nodeType) => {
+        switch(nodeType) {
+          case 'batchsource':
+          case 'realtimesource':
+            return 'R';
+          case 'batchsink':
+          case 'realtimesink':
+          case 'sparksink':
+            return 'L';
+          default:
+            return 'LR';
+        }
+      };
+      let getNodeType = (nodeType) => {
+        switch(nodeType) {
+          case 'batchsource':
+          case 'realtimesource':
+            return 'source';
+          case 'batchsink':
+          case 'realtimesink':
+          case 'sparksink':
+            return 'sink';
+          default:
+            return 'transform';
+        }
+      };
+      let  nodes = configJson.__ui__.nodes.map( node => {
+        return {
+          id: node.name,
+          name: node.plugin.label,
+          endpoint: getEndpoint(node.type),
+          icon: node.icon,
+          cssClass: getNodeType(node.type),
+          nodeType: getNodeType(node.type)
+        };
+      });
+      // DAGPlusPlusNodesActionsFactory.createGraphFromConfig(configJson.__ui__.nodes, configJson.config.connections, configJson.config.comments);
+      $timeout(() => {
+        MyDagStore.dispatch({
+          type: 'SET-NODES',
+          nodes: nodes
+        });
+        MyDagStore.dispatch({
+          type: 'SET-CONNECTIONS',
+          connections: configJson.config.connections
+        });
+        MyDagStore.dispatch({type: 'INIT-DAG'});
+      });
+      HydratorPlusPlusConfigStore.setNodes(configJson.__ui__.nodes);
+      HydratorPlusPlusConfigStore.setConnections(configJson.config.connections);
     } else {
       let config = {};
       config.artifact = artifact;
@@ -73,7 +121,7 @@ class HydratorPlusPlusStudioCtrl {
   }
 }
 
-HydratorPlusPlusStudioCtrl.$inject = ['HydratorPlusPlusLeftPanelStore', 'HydratorPlusPlusConfigActions', '$stateParams', 'rConfig', '$rootScope', '$scope', 'HydratorPlusPlusDetailNonRunsStore', 'HydratorPlusPlusNodeConfigStore', 'DAGPlusPlusNodesActionsFactory', 'HydratorPlusPlusHydratorService', 'HydratorPlusPlusConsoleActions','rSelectedArtifact', 'rArtifacts', 'myLocalStorage'];
+HydratorPlusPlusStudioCtrl.$inject = ['HydratorPlusPlusLeftPanelStore', 'HydratorPlusPlusConfigActions', '$stateParams', 'rConfig', '$rootScope', '$scope', 'HydratorPlusPlusDetailNonRunsStore', 'HydratorPlusPlusNodeConfigStore', 'DAGPlusPlusNodesActionsFactory', 'HydratorPlusPlusHydratorService', 'HydratorPlusPlusConsoleActions','rSelectedArtifact', 'rArtifacts', 'myLocalStorage', 'MyDagStore', '$timeout', 'HydratorPlusPlusConfigStore'];
 
 angular.module(PKG.name + '.feature.hydratorplusplus')
   .controller('HydratorPlusPlusStudioCtrl', HydratorPlusPlusStudioCtrl);

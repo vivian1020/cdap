@@ -14,40 +14,46 @@ function Dag1TestCtrl(MyDagStore, $timeout, $scope) {
   };
   this.addSource = () => {
     MyDagStore.dispatch({
-      name: 'Source1',
-      cssClass: 'batchsource',
-      endpoint: 'R',
-      badgeInfo: 2,
-      badgeToolTip: 'Some tooltip',
-      badgeCssClass: 'text-warning',
-      nodeType: 'source',
-      tooltipCssClass: 'badge-warning',
+      node: {
+        name: 'Source1',
+        cssClass: 'batchsource',
+        endpoint: 'R',
+        badgeInfo: 2,
+        badgeToolTip: 'Some tooltip',
+        badgeCssClass: 'text-warning',
+        nodeType: 'source',
+        tooltipCssClass: 'badge-warning',
+      },
       type: 'ADD-NODE'
     });
   };
   this.addSink = () => {
     MyDagStore.dispatch({
-      name: 'Sink1',
-      cssClass: 'batchsink',
-      endpoint: 'L',
-      badgeInfo: 2,
-      badgeToolTip: 'Some tooltip',
-      badgeCssClass: 'text-warning',
-      nodeType: 'sink',
-      tooltipCssClass: 'badge-warning',
+      node: {
+        name: 'Sink1',
+        cssClass: 'batchsink',
+        endpoint: 'L',
+        badgeInfo: 2,
+        badgeToolTip: 'Some tooltip',
+        badgeCssClass: 'text-warning',
+        nodeType: 'sink',
+        tooltipCssClass: 'badge-warning',
+      },
       type: 'ADD-NODE'
     });
   };
   this.addTransform = () => {
     MyDagStore.dispatch({
-      name: 'Transform1',
-      cssClass: 'transform',
-      endpoint: 'LR',
-      badgeInfo: 2,
-      badgeToolTip: 'Some tooltip',
-      badgeCssClass: 'text-warning',
-      tooltipCssClass: 'badge-warning',
-      nodeType: 'transform',
+      node: {
+        name: 'Transform1',
+        cssClass: 'transform',
+        endpoint: 'LR',
+        badgeInfo: 2,
+        badgeToolTip: 'Some tooltip',
+        badgeCssClass: 'text-warning',
+        tooltipCssClass: 'badge-warning',
+        nodeType: 'transform',
+      },
       type: 'ADD-NODE'
     });
   };

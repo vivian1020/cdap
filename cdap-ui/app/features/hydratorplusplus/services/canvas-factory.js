@@ -151,7 +151,7 @@
       var parallelConnections = [];
       var nodesMap = {};
       nodes.forEach(function(n) {
-        nodesMap[n.name] = n;
+        nodesMap[n.id] = n;
       });
       var source = connections.filter(function(conn) {
         if (nodesMap[conn.from].type === GLOBALS.pluginTypes[appType].source) {

@@ -74,7 +74,7 @@ class HydratorPlusPlusNodeConfigCtrl {
       groupsConfig: {},
 
       isValidPlugin: config.isValidPlugin || false,
-      node: angular.copy(config.node) || {},
+      node: config.node || {},
 
       isSource: config.isSource || false,
       isSink: config.isSink || false,
