@@ -142,7 +142,7 @@ angular.module(`${PKG.name}.services`)
         nodeType: 'ACTION',
         nodeId: '',
         program: {
-          programName: 'Start',
+          programName: 'Start'
         }
       });
 
@@ -177,33 +177,60 @@ angular.module(`${PKG.name}.services`)
             return 'LR';
         }
       };
-      let getIcon = (program) => {
-        switch(program.programType) {
+      let getIcon = (node) => {
+        let programType = node.program.programType || node.nodeType;
+
+        switch(programType) {
+          case 'JOINNODE':
+          case 'FORKNODE':
+          case 'CONDITIONNODE':
+          case 'CONDITIONEND':
+            return 'icon-plug';
           case 'MAPREDUCE':
             return 'icon-mapreduce';
           case 'SPARK':
             return 'icon-spark';
-          default:
-            return program.programName === 'Start'? 'fa-caret-right': 'fa-caret-left';
+          case 'Start':
+            return 'fa-caret-right';
+          case 'End':
+            return 'fa-caret-left';
         }
       };
-      let getIconCssClass = (program) => {
-        switch(program.programType) {
+      let getIconCssClass = (node) => {
+        let programType = node.program.programType || node.nodeType;
+        switch(programType) {
           case 'MAPREDUCE':
           case 'SPARK':
+          case 'JOINNODE':
+          case 'FORKNODE':
+          case 'CONDITIONNODE':
+          case 'CONDITIONEND':
             return 'transform';
-          default:
-            return program.programName === 'Start'? 'source': 'sink';
+          case 'Start':
+            return 'source';
+          case 'End':
+            return 'sink';
         }
       };
+      let getName = (node) => {
+        switch(node.nodeType) {
+          case 'CONDITIONNODE':
+            return 'IF';
+          case 'CONDITIONEND':
+            return 'ENDIF';
+          default:
+            return node.name;
+        }
+      };
+
       return nodes.map( node => {
         return {
           id: node.name,
-          name: node.name,
+          name: getName(node),
           endpoint: getEndPoint(node.type),
-          icon: getIcon(node.program),
-          cssClass: getIconCssClass(node.program),
-          nodeType: getIconCssClass(node.program)
+          icon: getIcon(node),
+          cssClass: getIconCssClass(node),
+          nodeType: getIconCssClass(node)
         };
       });
     }
