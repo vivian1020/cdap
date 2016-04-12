@@ -29,6 +29,14 @@ class HydratorPlusPlusStudioCtrl {
       HydratorPlusPlusDetailNonRunsStore.reset();
       HydratorPlusPlusNodeConfigStore.reset();
       HydratorPlusPlusConsoleActions.resetMessages();
+      MyDagStore.dispatch({
+        type: 'SET-NODES',
+        nodes: []
+      });
+      MyDagStore.dispatch({
+        type: 'SET-CONNECTIONS',
+        connections: []
+      });
     });
 
     let getValidArtifact = () => {
