@@ -512,6 +512,10 @@ class HydratorPlusPlusConfigStore {
       errorFactory.hasAtLeastOneSink
     ];
     let nodes = this.state.__ui__.nodes;
+    nodes = nodes.map( node => {
+      node.name = node.id;
+      return node;
+    });
     let connections = angular.copy(this.state.config.connections);
     nodes.forEach( node => { node.errorCount = 0;});
     let ERROR_MESSAGES = this.GLOBALS.en.hydrator.studio.error;
