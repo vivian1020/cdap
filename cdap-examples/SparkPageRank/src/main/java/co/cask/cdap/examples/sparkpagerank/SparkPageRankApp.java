@@ -98,7 +98,7 @@ public class SparkPageRankApp extends AbstractApplication {
 
     @Override
     public void configure() {
-      setDescription("Runs SparkPageRankProgram followed by RanksCounter MapReduce");
+      setDescription("Runs PageRankSpark program followed by RanksCounter MapReduce program");
       addSpark(PageRankSpark.class.getSimpleName());
       addMapReduce(RanksCounter.class.getSimpleName());
     }
@@ -111,7 +111,7 @@ public class SparkPageRankApp extends AbstractApplication {
 
     @Override
     public void configure() {
-      setDescription("Spark Page Rank Program");
+      setDescription("Spark page rank program");
       setMainClass(SparkPageRankProgram.class);
       setDriverResources(new Resources(1024));
       setExecutorResources(new Resources(1024));
