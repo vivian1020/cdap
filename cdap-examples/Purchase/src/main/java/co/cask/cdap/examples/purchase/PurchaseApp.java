@@ -36,7 +36,7 @@ public class PurchaseApp extends AbstractApplication {
   @Override
   public void configure() {
     setName(APP_NAME);
-    setDescription("Purchase history application.");
+    setDescription("Purchase history application");
 
     // Ingest data into the Application via a Stream
     addStream(new Stream("purchaseStream"));
@@ -47,7 +47,7 @@ public class PurchaseApp extends AbstractApplication {
 
     // Store user profiles in a Dataset
     createDataset("userProfiles", KeyValueTable.class,
-                  DatasetProperties.builder().setDescription("Store User profiles").build());
+                  DatasetProperties.builder().setDescription("Store user profiles").build());
 
     // Process events in realtime using a Flow
     addFlow(new PurchaseFlow());
@@ -83,10 +83,10 @@ public class PurchaseApp extends AbstractApplication {
       "PurchaseHistoryWorkflow"
     );
 
-    createDataset("history", PurchaseHistoryStore.class, PurchaseHistoryStore.properties("History Dataset"));
+    createDataset("history", PurchaseHistoryStore.class, PurchaseHistoryStore.properties("History dataset"));
     try {
       createDataset("purchases", ObjectMappedTable.class, ObjectMappedTableProperties.builder().setType(Purchase.class)
-        .setDescription("Store Purchases").build());
+        .setDescription("Store purchases").build());
     } catch (UnsupportedTypeException e) {
       // This exception is thrown by ObjectMappedTable if its parameter type cannot be
       // (de)serialized (for example, if it is an interface and not a class, then there is
