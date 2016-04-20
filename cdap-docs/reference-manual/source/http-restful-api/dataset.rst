@@ -108,7 +108,7 @@ with JSON-formatted name of the dataset type, properties, and description in a b
        ``"description":"My Dataset Description}"``
    * - Description
      - Creates a dataset named *mydataset* of the type ``Table`` in the namespace *default*
-       with the time-to-live property set to 1 hour and description ``My Dataset Description``
+       with the time-to-live property set to 1 hour and a description of ``My Dataset Description``
 
 .. _http-restful-api-dataset-updating:
 
