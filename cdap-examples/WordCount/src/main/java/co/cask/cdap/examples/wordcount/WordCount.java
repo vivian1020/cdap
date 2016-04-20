@@ -19,6 +19,7 @@ package co.cask.cdap.examples.wordcount;
 import co.cask.cdap.api.Config;
 import co.cask.cdap.api.app.AbstractApplication;
 import co.cask.cdap.api.data.stream.Stream;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.table.Table;
 
@@ -94,10 +95,14 @@ public class WordCount extends AbstractApplication<WordCount.WordCountConfig> {
     addStream(new Stream(config.getStream()));
 
     // Store processed data in Datasets
-    createDataset(config.getWordStatsTable(), Table.class);
-    createDataset(config.getWordCountTable(), KeyValueTable.class);
-    createDataset(config.getUniqueCountTable(), UniqueCountTable.class);
-    createDataset(config.getWordAssocTable(), AssociationTable.class);
+    createDataset(config.getWordStatsTable(), Table.class,
+                  DatasetProperties.builder().setDescription("Word Statistics Table").build());
+    createDataset(config.getWordCountTable(), KeyValueTable.class,
+                  DatasetProperties.builder().setDescription("Word Count Table").build());
+    createDataset(config.getUniqueCountTable(), UniqueCountTable.class,
+                  DatasetProperties.builder().setDescription("Unique Counts Table").build());
+    createDataset(config.getWordAssocTable(), AssociationTable.class,
+                  DatasetProperties.builder().setDescription("Word Association Table").build());
 
     // Process events in real-time using Flows
     addFlow(new WordCounter(config));

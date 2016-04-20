@@ -45,6 +45,7 @@ public class SportResults extends AbstractApplication {
       .setEnableExploreOnCreate(true)
       .setExploreFormat("csv")
       .setExploreSchema("date STRING, winner STRING, loser STRING, winnerpoints INT, loserpoints INT")
+      .setDescription("Sports results Fileset dataset")
       .build());
 
     // Create the aggregates partitioned file set, configure it to work with MapReduce and with Explore
@@ -59,6 +60,7 @@ public class SportResults extends AbstractApplication {
       .setEnableExploreOnCreate(true)
       .setExploreFormat("csv")
       .setExploreSchema("team STRING, wins INT, ties INT, losses INT, scored INT, conceded INT")
+      .setDescription("Result Aggregates Fileset dataset")
       .build());
   }
 }

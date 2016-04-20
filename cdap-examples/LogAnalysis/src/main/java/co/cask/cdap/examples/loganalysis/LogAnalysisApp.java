@@ -20,6 +20,7 @@ import co.cask.cdap.api.annotation.UseDataSet;
 import co.cask.cdap.api.app.AbstractApplication;
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.stream.Stream;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.lib.TimePartitionDetail;
@@ -86,11 +87,14 @@ public class LogAnalysisApp extends AbstractApplication {
     addService(REQUEST_COUNTER_SERVICE, new RequestCounterHandler());
 
     // Datasets to store output after processing
-    createDataset(RESPONSE_COUNT_STORE, KeyValueTable.class);
-    createDataset(HIT_COUNT_STORE, KeyValueTable.class);
+    createDataset(RESPONSE_COUNT_STORE, KeyValueTable.class,
+                  DatasetProperties.builder().setDescription("Store Response Counts").build());
+    createDataset(HIT_COUNT_STORE, KeyValueTable.class,
+                  DatasetProperties.builder().setDescription("Store Hit Counts").build());
     createDataset(REQ_COUNT_STORE, TimePartitionedFileSet.class, FileSetProperties.builder()
       .setOutputFormat(TextOutputFormat.class)
-      .setOutputProperty(TextOutputFormat.SEPERATOR, ":").build());
+      .setOutputProperty(TextOutputFormat.SEPERATOR, ":")
+      .setDescription("Store Request Counts").build());
   }
 
   /**
