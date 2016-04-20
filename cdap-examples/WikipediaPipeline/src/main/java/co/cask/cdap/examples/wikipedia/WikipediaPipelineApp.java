@@ -50,15 +50,15 @@ public class WikipediaPipelineApp extends AbstractApplication<WikipediaPipelineA
     addMapReduce(new TopNMapReduce());
     addSpark(new SparkWikipediaClustering(getConfig()));
     createDataset(PAGE_TITLES_DATASET, KeyValueTable.class,
-                  DatasetProperties.builder().setDescription("Page Titles Dataset").build());
+                  DatasetProperties.builder().setDescription("Page titles dataset").build());
     createDataset(RAW_WIKIPEDIA_DATASET, KeyValueTable.class,
-                  DatasetProperties.builder().setDescription("Raw Wikipedia Dataset").build());
+                  DatasetProperties.builder().setDescription("Raw Wikipedia dataset").build());
     createDataset(NORMALIZED_WIKIPEDIA_DATASET, KeyValueTable.class,
-                  DatasetProperties.builder().setDescription("Normalized Wikipedia Dataset").build());
+                  DatasetProperties.builder().setDescription("Normalized Wikipedia dataset").build());
     createDataset(SPARK_CLUSTERING_OUTPUT_DATASET, Table.class,
-                  DatasetProperties.builder().setDescription("Spark Clustering Output Dataset").build());
+                  DatasetProperties.builder().setDescription("Spark clustering output dataset").build());
     createDataset(MAPREDUCE_TOPN_OUTPUT, KeyValueTable.class,
-                  DatasetProperties.builder().setDescription("MapReduce TopN Output Dataset").build());
+                  DatasetProperties.builder().setDescription("MapReduce top-'N'-words output dataset").build());
     addWorkflow(new WikipediaPipelineWorkflow(getConfig()));
     addService(new WikipediaService());
   }
