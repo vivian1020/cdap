@@ -30,7 +30,7 @@ public class CountRandom extends AbstractApplication {
   public void configure() {
     setName("CountRandom");
     setDescription("Example random count application");
-    createDataset(TABLE_NAME, KeyValueTable.class, DatasetProperties.builder().setDescription("Counts Table").build());
+    createDataset(TABLE_NAME, KeyValueTable.class, DatasetProperties.builder().setDescription("Counts table").build());
     addFlow(new CountRandomFlow());
   }
 }
