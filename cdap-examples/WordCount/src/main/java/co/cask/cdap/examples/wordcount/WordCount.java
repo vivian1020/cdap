@@ -94,15 +94,15 @@ public class WordCount extends AbstractApplication<WordCount.WordCountConfig> {
     // Ingest data into the Application via Streams
     addStream(new Stream(config.getStream()));
 
-    // Store processed data in Datasets
+    // Store processed data in Datasetss
     createDataset(config.getWordStatsTable(), Table.class,
-                  DatasetProperties.builder().setDescription("Word Statistics Table").build());
+                  DatasetProperties.builder().setDescription("Stats of total counts and lengths of words").build());
     createDataset(config.getWordCountTable(), KeyValueTable.class,
-                  DatasetProperties.builder().setDescription("Word Count Table").build());
+                  DatasetProperties.builder().setDescription("Words and corresponding counts").build());
     createDataset(config.getUniqueCountTable(), UniqueCountTable.class,
-                  DatasetProperties.builder().setDescription("Unique Counts Table").build());
+                  DatasetProperties.builder().setDescription("Total count of unique words").build());
     createDataset(config.getWordAssocTable(), AssociationTable.class,
-                  DatasetProperties.builder().setDescription("Word Association Table").build());
+                  DatasetProperties.builder().setDescription("Word associations table").build());
 
     // Process events in real-time using Flows
     addFlow(new WordCounter(config));
