@@ -88,13 +88,13 @@ public class LogAnalysisApp extends AbstractApplication {
 
     // Datasets to store output after processing
     createDataset(RESPONSE_COUNT_STORE, KeyValueTable.class,
-                  DatasetProperties.builder().setDescription("Store Response Counts").build());
+                  DatasetProperties.builder().setDescription("Store response counts").build());
     createDataset(HIT_COUNT_STORE, KeyValueTable.class,
-                  DatasetProperties.builder().setDescription("Store Hit Counts").build());
+                  DatasetProperties.builder().setDescription("Store hit counts").build());
     createDataset(REQ_COUNT_STORE, TimePartitionedFileSet.class, FileSetProperties.builder()
       .setOutputFormat(TextOutputFormat.class)
       .setOutputProperty(TextOutputFormat.SEPERATOR, ":")
-      .setDescription("Store Request Counts").build());
+      .setDescription("Store request counts").build());
   }
 
   /**
@@ -104,7 +104,7 @@ public class LogAnalysisApp extends AbstractApplication {
 
     @Override
     public void configure() {
-      setDescription("Runs log analysis spark and mapreduce programs simultaneously");
+      setDescription("Runs Spark and MapReduce log analysis programs simultaneously");
       fork()
         .addMapReduce(HitCounterProgram.class.getSimpleName())
         .also()
