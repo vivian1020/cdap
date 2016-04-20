@@ -105,7 +105,7 @@ with JSON-formatted name of the dataset type, properties, and description in a b
      - ``PUT <base-url>/namespaces/default/data/datasets/mydataset``
    * - Body
      - ``{"typeName":"co.cask.cdap.api.dataset.table.Table",`` ``"properties":{"dataset.table.ttl":"3600"},``
-       ``"description":"My Dataset Description}"``
+       ``"description":"My Dataset Description"}``
    * - Description
      - Creates a dataset named *mydataset* of the type ``Table`` in the namespace *default*
        with the time-to-live property set to 1 hour and a description of ``My Dataset Description``
