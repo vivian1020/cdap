@@ -1297,7 +1297,9 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
   }
 
   protected Map<String, String> startSession(Id.Namespace namespace) throws IOException, ExploreException {
-    updateTokenStore();
+    if (UserGroupInformation.isSecurityEnabled()) {
+      updateTokenStore();
+    }
 
     Map<String, String> sessionConf = Maps.newHashMap();
 
@@ -1355,7 +1357,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     if (!tmpFile.renameTo(credentialsFile)) {
       throw new ExploreException(String.format("Failed to rename %s to %s", tmpFile, credentialsFile));
     }
-    LOG.info("Secure store saved to {}", credentialsFile);
+    LOG.debug("Secure store saved to {}", credentialsFile);
   }
 
   protected QueryHandle getQueryHandle(Map<String, String> sessionConf) throws HandleNotFoundException {
