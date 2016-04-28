@@ -110,6 +110,9 @@ import java.io.Reader;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1325,10 +1328,24 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
    * See: https://issues.apache.org/jira/browse/TWILL-170
    */
   private void updateTokenStore() throws IOException, ExploreException {
-    File credentialsFile = new File(System.getenv(UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION));
+    String hadoopTokenFileLocation = System.getenv(UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION);
+    if (hadoopTokenFileLocation == null) {
+      LOG.warn("Skipping update of token store due to failure to find environment variable '{}'.",
+               UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION);
+      return;
+    }
 
-    File tmpFile = File.createTempFile("credentials.store", null, credentialsFile.getParentFile());
-    LOG.debug("Writing to temporary file: {}", tmpFile.getAbsoluteFile());
+    File credentialsFile = new File(hadoopTokenFileLocation);
+
+    FileAttribute<Set<PosixFilePermission>> originalPermissionAttributes =
+      PosixFilePermissions.asFileAttribute(java.nio.file.Files.getPosixFilePermissions(credentialsFile.toPath()));
+
+    File tmpFile = java.nio.file.Files.createTempFile(credentialsFile.getParentFile().toPath(),
+                                                      "credentials.store", null,
+                                                       originalPermissionAttributes)
+      .toFile();
+
+    LOG.debug("Writing to temporary file: {}", tmpFile);
 
     try (DataOutputStream os = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tmpFile)))) {
       Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
