@@ -17,10 +17,18 @@
  */
 package org.apache.twill.internal.yarn;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.HAUtil;
+import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.twill.api.RunId;
+import org.apache.twill.filesystem.FileContextLocationFactory;
+import org.apache.twill.filesystem.ForwardingLocationFactory;
+import org.apache.twill.filesystem.HDFSLocationFactory;
 import org.apache.twill.filesystem.Location;
+import org.apache.twill.filesystem.LocationFactory;
 import org.apache.twill.internal.AbstractTwillService;
 import org.apache.twill.internal.Constants;
 import org.apache.twill.internal.state.Message;
@@ -32,8 +40,14 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
 
 /**
+ * TODO: copied from Twill 0.6 YarnUtils for CDAP-5844. Remove after this fix is moved to Twill.
+ *
  * Abstract class for implementing {@link com.google.common.util.concurrent.Service} that runs in
  * YARN container which provides methods to handle secure token updates.
  */
@@ -88,6 +102,9 @@ public abstract class AbstractYarnTwillService extends AbstractTwillService {
       }
 
       UserGroupInformation.getCurrentUser().addCredentials(credentials);
+
+      // CDAP-5844 Workaround for HDFS-9276, to update HDFS delegation token for long running application in HA mode
+      cloneHaNnCredentials(location, UserGroupInformation.getCurrentUser());
       this.credentials = credentials;
 
       LOG.info("Secure store updated from {}.", location);
@@ -97,5 +114,43 @@ public abstract class AbstractYarnTwillService extends AbstractTwillService {
     }
 
     return true;
+  }
+
+  private static void cloneHaNnCredentials(Location location,
+                                           UserGroupInformation ugi) throws URISyntaxException, IOException {
+    Configuration hConf = getConfiguration(location.getLocationFactory());
+
+    Map<String, Map<String, InetSocketAddress>> nsIdMap = DFSUtil.getHaNnRpcAddresses(hConf);
+    for (Map.Entry<String, Map<String, InetSocketAddress>> entry : nsIdMap.entrySet()) {
+      String nsId = entry.getKey();
+      Map<String, InetSocketAddress> addressesInNN = entry.getValue();
+      if (!HAUtil.isHAEnabled(hConf, nsId) || addressesInNN == null || addressesInNN.isEmpty()) {
+        continue;
+      }
+      // The client may have a delegation token set for the logical
+      // URI of the cluster. Clone this token to apply to each of the
+      // underlying IPC addresses so that the IPC code can find it.
+      LOG.info("Cloning delegation token for nsId {}", nsId);
+      URI uri = new URI(HdfsConstants.HDFS_URI_SCHEME + "://" + nsId);
+      HAUtil.cloneDelegationTokenForLogicalUri(ugi, uri, addressesInNN.values());
+    }
+  }
+
+  /**
+   * Gets the Hadoop Configuration from LocationFactory.
+   */
+  private static Configuration getConfiguration(LocationFactory locationFactory) throws IOException {
+    LOG.debug("getFileSystem(): locationFactory is a {}", locationFactory.getClass());
+    if (locationFactory instanceof HDFSLocationFactory) {
+      return ((HDFSLocationFactory) locationFactory).getFileSystem().getConf();
+    }
+    if (locationFactory instanceof ForwardingLocationFactory) {
+      return getConfiguration(((ForwardingLocationFactory) locationFactory).getDelegate());
+    }
+    if (locationFactory instanceof FileContextLocationFactory) {
+      return ((FileContextLocationFactory) locationFactory).getConfiguration();
+    }
+    throw new IllegalArgumentException(String.format("Unknown LocationFactory type: %s",
+                                                     locationFactory.getClass().getName()));
   }
 }
