@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014-2015 Cask Data, Inc.
+ * Copyright © 2014-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -81,6 +81,7 @@ import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hive.service.auth.HiveAuthFactory;
 import org.apache.hive.service.cli.CLIService;
@@ -98,14 +99,20 @@ import org.apache.twill.common.Threads;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -715,7 +722,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
 
     try {
       // Even with the "IF NOT EXISTS" in the create command, Hive still logs a non-fatal warning internally
-      // when attempting to create the "default" namsepace (since it already exists in Hive).
+      // when attempting to create the "default" namespace (since it already exists in Hive).
       // This check prevents the extra warn log.
       if (Id.Namespace.DEFAULT.equals(namespace)) {
         return QueryHandle.NO_OP;
@@ -973,7 +980,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     return listBuilder.build();
   }
 
-  protected void setCurrentDatabase(String dbName) throws Throwable {
+  private void setCurrentDatabase(String dbName) throws Throwable {
     SessionState.get().setCurrentDatabase(dbName);
   }
 
@@ -1105,7 +1112,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     while (count < secondsToWait) {
       try {
         datasetFramework.getInstances(Id.Namespace.DEFAULT);
-        LOG.info("Dataset service is up and running, proceding with explore upgrade.");
+        LOG.info("Dataset service is up and running, proceeding with explore upgrade.");
         return;
       } catch (Exception e) {
         count++;
@@ -1269,7 +1276,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     }
   }
 
-  private String getHiveDatabase(String namespace) {
+  private String getHiveDatabase(@Nullable String namespace) {
     // null namespace implies that the operation happens across all databases
     if (namespace == null) {
       return null;
@@ -1283,12 +1290,17 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
    * @return configuration for a hive session that contains a transaction, and serialized CDAP configuration and
    * HBase configuration. This will be used by the map-reduce tasks started by Hive.
    * @throws IOException
+   * @throws ExploreException
    */
-  protected Map<String, String> startSession() throws IOException {
+  protected Map<String, String> startSession() throws IOException, ExploreException {
     return startSession(null);
   }
 
-  protected Map<String, String> startSession(Id.Namespace namespace) throws IOException {
+  protected Map<String, String> startSession(Id.Namespace namespace) throws IOException, ExploreException {
+    if (UserGroupInformation.isSecurityEnabled()) {
+      updateTokenStore();
+    }
+
     Map<String, String> sessionConf = Maps.newHashMap();
 
     QueryHandle queryHandle = QueryHandle.generate();
@@ -1310,6 +1322,42 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
       sessionConf.putAll(sparkConf);
     }
     return sessionConf;
+  }
+
+  /**
+   * Updates the token store to be used for the hive job, based upon the Explore container's credentials.
+   * This is because twill doesn't update the container_tokens on upon token refresh.
+   * See: https://issues.apache.org/jira/browse/TWILL-170
+   */
+  private void updateTokenStore() throws IOException, ExploreException {
+    String hadoopTokenFileLocation = System.getenv(UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION);
+    if (hadoopTokenFileLocation == null) {
+      LOG.warn("Skipping update of token store due to failure to find environment variable '{}'.",
+               UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION);
+      return;
+    }
+
+    File credentialsFile = new File(hadoopTokenFileLocation);
+
+    FileAttribute<Set<PosixFilePermission>> originalPermissionAttributes =
+      PosixFilePermissions.asFileAttribute(java.nio.file.Files.getPosixFilePermissions(credentialsFile.toPath()));
+
+    File tmpFile = java.nio.file.Files.createTempFile(credentialsFile.getParentFile().toPath(),
+                                                      "credentials.store", null,
+                                                       originalPermissionAttributes)
+      .toFile();
+
+    LOG.debug("Writing to temporary file: {}", tmpFile);
+
+    try (DataOutputStream os = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tmpFile)))) {
+      Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
+      credentials.writeTokenStorageToStream(os);
+    }
+
+    if (!tmpFile.renameTo(credentialsFile)) {
+      throw new ExploreException(String.format("Failed to rename %s to %s", tmpFile, credentialsFile));
+    }
+    LOG.debug("Secure store saved to {}", credentialsFile);
   }
 
   protected QueryHandle getQueryHandle(Map<String, String> sessionConf) throws HandleNotFoundException {
