@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014-2015 Cask Data, Inc.
+ * Copyright © 2014-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -24,12 +24,9 @@ import co.cask.cdap.proto.ColumnDesc;
 import co.cask.cdap.proto.QueryHandle;
 import co.cask.cdap.proto.QueryResult;
 import co.cask.cdap.proto.QueryStatus;
-import co.cask.http.ChunkResponder;
 import co.cask.http.HttpResponder;
 import com.google.common.collect.Lists;
-import com.google.common.io.Closeables;
 import com.google.inject.Inject;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
@@ -198,33 +195,14 @@ public class QueryExecutorHttpHandler extends AbstractQueryExecutorHttpHandler {
         return;
       }
 
-      StringBuffer sb = new StringBuffer();
-      sb.append(getCSVHeaders(exploreService.getResultSchema(handle)));
-      sb.append('\n');
-
-      List<QueryResult> results;
-      results = exploreService.previewResults(handle);
-      if (results.isEmpty()) {
-        results = exploreService.nextResults(handle, DOWNLOAD_FETCH_CHUNK_SIZE);
-      }
-
-      ChunkResponder chunkResponder = responder.sendChunkStart(HttpResponseStatus.OK, null);
+      QueryResultsBodyProducer queryResultsBodyProducer = new QueryResultsBodyProducer(exploreService, handle);
+      queryResultsBodyProducer.initialize();
       responseStarted = true;
-      while (!results.isEmpty()) {
-        for (QueryResult result : results) {
-          appendCSVRow(sb, result);
-          sb.append('\n');
-        }
-        // If failed to send to client, just propagate the IOException and let netty-http to handle
-        chunkResponder.sendChunk(ChannelBuffers.wrappedBuffer(sb.toString().getBytes("UTF-8")));
-        sb.delete(0, sb.length());
-        results = exploreService.nextResults(handle, DOWNLOAD_FETCH_CHUNK_SIZE);
-      }
-      Closeables.closeQuietly(chunkResponder);
+      responder.sendContent(HttpResponseStatus.OK, queryResultsBodyProducer, null);
 
     } catch (IllegalArgumentException e) {
       LOG.debug("Got exception:", e);
-      // We can't send another response if sendChunkStart has been called
+      // We can't send another response if sendContent has been called
       if (!responseStarted) {
         responder.sendString(HttpResponseStatus.BAD_REQUEST, e.getMessage());
       }
