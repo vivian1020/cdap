@@ -61,7 +61,7 @@ function download_md_doc_file() {
   type_capital="$(echo ${type:0:1} | tr [:lower:] [:upper:])${type:1}"
   type_plural="${type}s" # types are plural
   local target_file_name=$(echo "${source_file_name%-*}.md" | tr [:upper:] [:lower:]) # cassandra
-
+  
   local source_url="${base_source}/${source_dir}/docs/${source_file_name}"
   local target_dir="${base_target}/${type_plural}"
   local target="${target_dir}/${target_file_name}"
@@ -114,13 +114,13 @@ function extract_table() {
 }
 
 function download_includes() {
+  local target_includes_dir=${1}
   echo_red_bold "Downloading Markdown doc file includes from GitHub repo caskdata/hydrator-plugins..."
   set_version
-  
   # Copy the source _includes files so they can be populated with the markdown files
   local hydrator_plugins="hydrator-plugins"
-  local base_target="${1}/${hydrator_plugins}"
-  cp -R "${SCRIPT_PATH}/source/_includes/${hydrator_plugins}" "${1}"
+  local base_target="${target_includes_dir}/${hydrator_plugins}"
+  cp -R "${SCRIPT_PATH}/source/_includes/${hydrator_plugins}" "${target_includes_dir}"
   
   local base_source="https://raw.githubusercontent.com/caskdata/hydrator-plugins"
   if [ "x${GIT_BRANCH_TYPE:0:7}" == "xdevelop" ]; then
@@ -210,6 +210,15 @@ function download_includes() {
 
   extract_table ${base_target} transforms/validator.md validator-extract.txt
   
+  # Move hydrator plugins back to source directory
+  rm -rf "${SCRIPT_PATH}/_includes/hydrator/"
+  mv "${target_includes_dir}/${hydrator_plugins}" "${SCRIPT_PATH}/_includes"
+    
+}
+
+function cleanup_build_docs() {
+  # Over-ride this function to perform any cleanup required.
+  echo "No cleanup being performed."
 }
 
 run_command ${1}
