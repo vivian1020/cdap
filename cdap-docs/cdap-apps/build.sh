@@ -121,7 +121,9 @@ function download_includes() {
   local hydrator_plugins="hydrator-plugins"
   local base_target="${target_includes_dir}/${hydrator_plugins}"
   cp -R "${SCRIPT_PATH}/source/_includes/${hydrator_plugins}" "${target_includes_dir}"
-  
+
+  return
+
   local base_source="https://raw.githubusercontent.com/caskdata/hydrator-plugins"
   if [ "x${GIT_BRANCH_TYPE:0:7}" == "xdevelop" ]; then
     local hydrator_branch="develop"

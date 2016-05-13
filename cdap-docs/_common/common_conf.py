@@ -151,6 +151,7 @@ templates_path = ['_templates', '../../_common/_templates']
 # The suffix of source filenames.
 source_suffix = '.rst'
 try:
+    from recommonmark.transform import AutoStructify
     from recommonmark.parser import CommonMarkParser
     source_parsers = {'.md': CommonMarkParser}
     source_suffix = ['.rst', '.md']
@@ -732,3 +733,8 @@ def source_read_handler(app, docname, source):
 
 def setup(app):
     app.connect('source-read', source_read_handler)
+    app.add_config_value('recommonmark_config', {
+            'url_resolver': lambda url: url,
+            'auto_toc_tree_section': 'Contents',
+            }, True)
+    app.add_transform(AutoStructify)
