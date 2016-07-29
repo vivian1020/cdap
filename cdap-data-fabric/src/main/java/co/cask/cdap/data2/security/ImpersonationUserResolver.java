@@ -54,8 +54,9 @@ public class ImpersonationUserResolver {
     try {
       meta = namespaceQueryAdmin.get(new NamespaceId(namespacedId.getNamespace()).toId());
     } catch (Exception e) {
-      throw new RuntimeException(
-        String.format("Failed to retrieve namespace meta for namespace id %s", namespacedId.getNamespace()));
+      throw new RuntimeException(String.format("Failed to retrieve namespace meta for namespace id %s",
+                                               namespacedId.getNamespace()),
+                                 e);
     }
     return getImpersonationInfo(meta);
   }

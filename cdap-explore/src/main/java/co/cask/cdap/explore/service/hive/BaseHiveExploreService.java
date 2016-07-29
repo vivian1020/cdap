@@ -24,6 +24,7 @@ import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.namespace.NamespaceQueryAdmin;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiatorFactory;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
+import co.cask.cdap.data2.security.Impersonator;
 import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.explore.service.Explore;
 import co.cask.cdap.explore.service.ExploreException;
@@ -108,7 +109,6 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -118,6 +118,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -159,6 +160,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
   private final File credentialsDir;
   private final ScheduledExecutorService metastoreClientsExecutorService;
   private final NamespaceQueryAdmin namespaceQueryAdmin;
+  private final Impersonator impersonator;
 
   private final ThreadLocal<Supplier<IMetaStoreClient>> metastoreClientLocal;
 
@@ -188,7 +190,8 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
                                    CConfiguration cConf, Configuration hConf,
                                    File previewsDir, File credentialsDir, StreamAdmin streamAdmin,
                                    NamespaceQueryAdmin namespaceQueryAdmin,
-                                   SystemDatasetInstantiatorFactory datasetInstantiatorFactory) {
+                                   SystemDatasetInstantiatorFactory datasetInstantiatorFactory,
+                                   Impersonator impersonator) {
     this.cConf = cConf;
     this.hConf = hConf;
     this.schedulerQueueResolver = new SchedulerQueueResolver(cConf, namespaceQueryAdmin);
@@ -198,6 +201,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     this.metastoreClientReferences = Maps.newConcurrentMap();
     this.metastoreClientReferenceQueue = new ReferenceQueue<>();
     this.namespaceQueryAdmin = namespaceQueryAdmin;
+    this.impersonator = impersonator;
 
     // Create a Timer thread to periodically collect metastore clients that are no longer in used and call close on them
     this.metastoreClientsExecutorService =
@@ -209,7 +213,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     this.activeHandleCache =
       CacheBuilder.newBuilder()
         .expireAfterWrite(cConf.getLong(Constants.Explore.ACTIVE_OPERATION_TIMEOUT_SECS), TimeUnit.SECONDS)
-        .removalListener(new ActiveOperationRemovalHandler(this, scheduledExecutorService))
+        .removalListener(new ActiveOperationRemovalHandler(this, scheduledExecutorService, impersonator))
         .build();
     this.inactiveHandleCache =
       CacheBuilder.newBuilder()
@@ -918,7 +922,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
 
     try {
       // Fetch status from Hive
-      QueryStatus status = fetchStatus(getOperationInfo(handle));
+      QueryStatus status = fetchStatus(getActiveOperationInfo(handle));
       LOG.trace("Status of handle {} is {}", handle, status);
 
       // No results or error, so can be timed out aggressively
@@ -970,7 +974,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     throws HiveSQLException, ExploreException, HandleNotFoundException {
     startAndWait();
 
-    Lock nextLock = getOperationInfo(handle).getNextLock();
+    Lock nextLock = getActiveOperationInfo(handle).getNextLock();
     nextLock.lock();
     try {
       // Fetch results from Hive
@@ -997,7 +1001,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
       throw new HandleNotFoundException("Query is inactive.", true);
     }
 
-    OperationInfo operationInfo = getOperationInfo(handle);
+    OperationInfo operationInfo = getActiveOperationInfo(handle);
     Lock previewLock = operationInfo.getPreviewLock();
     previewLock.lock();
     try {
@@ -1057,6 +1061,20 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     }
   }
 
+  // TODO: move this method?
+
+  // helper method to throw only ExploreException and SQLException, since we know that the callables used
+  // only throw those checked exceptions
+  private <T> T doAs(NamespaceId namespaceId, Callable<T> callable) throws ExploreException, SQLException {
+    try {
+      return impersonator.doAs(namespaceId, callable);
+    } catch (ExploreException | HiveSQLException e) {
+      throw e;
+    } catch (Exception e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
   private List<ColumnDesc> getResultSchemaInternal(OperationHandle operationHandle) throws SQLException {
     ImmutableList.Builder<ColumnDesc> listBuilder = ImmutableList.builder();
     if (operationHandle.hasResultSet()) {
@@ -1069,7 +1087,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     return listBuilder.build();
   }
 
-  private void setCurrentDatabase(String dbName) throws Throwable {
+  private void setCurrentDatabase(String dbName) {
     SessionState.get().setCurrentDatabase(dbName);
   }
 
@@ -1229,21 +1247,30 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
    * Starts a long running transaction, and also sets up session configuration.
    * @return configuration for a hive session that contains a transaction, and serialized CDAP configuration and
    * HBase configuration. This will be used by the map-reduce tasks started by Hive.
-   * @throws IOException
    * @throws ExploreException
    */
-  private Map<String, String> startSession()
-    throws IOException, ExploreException, NamespaceNotFoundException {
+  private Map<String, String> startSession() throws ExploreException, NamespaceNotFoundException {
     return startSession(null);
   }
 
   private Map<String, String> startSession(@Nullable Id.Namespace namespace)
-    throws IOException, ExploreException, NamespaceNotFoundException {
+    throws ExploreException, NamespaceNotFoundException {
     return startSession(namespace, null);
   }
 
   private Map<String, String> startSession(@Nullable Id.Namespace namespace,
                                            @Nullable Map<String, String> additionalSessionConf)
+    throws ExploreException, NamespaceNotFoundException {
+    try {
+      return doStartSession(namespace, additionalSessionConf);
+    } catch (IOException e) {
+      // propagate IOException as ExploreException
+      throw new ExploreException(e);
+    }
+  }
+
+  private Map<String, String> doStartSession(@Nullable Id.Namespace namespace,
+                                             @Nullable Map<String, String> additionalSessionConf)
     throws IOException, ExploreException, NamespaceNotFoundException {
 
     Map<String, String> sessionConf = Maps.newHashMap();
@@ -1252,7 +1279,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     sessionConf.put(Constants.Explore.QUERY_ID, queryHandle.getHandle());
 
     String schedulerQueue = namespace != null ? schedulerQueueResolver.getQueue(namespace)
-                                              : schedulerQueueResolver.getDefaultQueue();
+      : schedulerQueueResolver.getDefaultQueue();
 
     if (schedulerQueue != null && !schedulerQueue.isEmpty()) {
       sessionConf.put(JobContext.QUEUE_NAME, schedulerQueue);
@@ -1333,7 +1360,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
    * @throws ExploreException
    */
   private OperationHandle getOperationHandle(QueryHandle handle) throws ExploreException, HandleNotFoundException {
-    return getOperationInfo(handle).getOperationHandle();
+    return getActiveOperationInfo(handle).getOperationHandle();
   }
 
   protected QueryStatus fetchStatus(OperationInfo operationInfo)
@@ -1413,13 +1440,22 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     activeHandleCache.invalidate(handle);
   }
 
-  private OperationInfo getOperationInfo(QueryHandle handle) throws HandleNotFoundException {
+  @Override
+  public OperationInfo getOperationInfo(QueryHandle queryHandle) throws HandleNotFoundException {
+    InactiveOperationInfo inactiveOperationInfo = inactiveHandleCache.getIfPresent(queryHandle);
+    if (inactiveOperationInfo != null) {
+      return inactiveOperationInfo;
+    }
+    return getActiveOperationInfo(queryHandle);
+  }
+
+  private OperationInfo getActiveOperationInfo(QueryHandle handle) throws HandleNotFoundException {
     // First look in running handles and handles that still can be fetched.
     OperationInfo opInfo = activeHandleCache.getIfPresent(handle);
     if (opInfo != null) {
       return opInfo;
     }
-    throw new HandleNotFoundException("Invalid handle provided");
+    throw new HandleNotFoundException(String.format("Invalid handle provided: %s", handle.getHandle()));
   }
 
   /**
