@@ -62,11 +62,11 @@ public class Hive12CDH5ExploreService extends BaseHiveExploreService {
   protected Hive12CDH5ExploreService(TransactionSystemClient txClient, DatasetFramework datasetFramework,
                                      CConfiguration cConf, Configuration hConf,
                                      @Named(Constants.Explore.PREVIEWS_DIR_NAME) File previewsDir,
+                                     @Named(Constants.Explore.CREDENTIALS_DIR_NAME) File credentialsDir,
                                      StreamAdmin streamAdmin, NamespaceQueryAdmin namespaceQueryAdmin,
-                                     SystemDatasetInstantiatorFactory datasetInstantiatorFactory,
-                                     ExploreTableNaming tableNaming) {
-    super(txClient, datasetFramework, cConf, hConf, previewsDir, streamAdmin, namespaceQueryAdmin,
-          datasetInstantiatorFactory, tableNaming);
+                                     SystemDatasetInstantiatorFactory datasetInstantiatorFactory) {
+    super(txClient, datasetFramework, cConf, hConf, previewsDir, credentialsDir, streamAdmin, namespaceQueryAdmin,
+          datasetInstantiatorFactory);
   }
 
   @Override
