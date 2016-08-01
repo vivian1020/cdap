@@ -36,7 +36,7 @@ public interface SecureStoreManager {
    * @param properties associated with this element.
    * @throws IOException If the attempt to store the element failed.
    */
-  void putSecureData(String namespace, String name, byte[] data, String description, Map<String, String> properties)
+  void putSecureData(String namespace, String name, String data, String description, Map<String, String> properties)
     throws IOException;
 
   /**

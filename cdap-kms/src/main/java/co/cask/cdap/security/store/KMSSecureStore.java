@@ -21,6 +21,7 @@ import co.cask.cdap.api.security.store.SecureStoreData;
 import co.cask.cdap.api.security.store.SecureStoreManager;
 import co.cask.cdap.api.security.store.SecureStoreMetadata;
 import co.cask.cdap.common.security.DelegationTokensUpdater;
+import com.google.common.base.Charsets;
 import com.google.inject.Inject;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.crypto.key.KeyProvider;
@@ -87,15 +88,16 @@ public class KMSSecureStore implements SecureStore, SecureStoreManager, Delegati
    * @throws IOException If it failed to store the key in the store.
    */
   @Override
-  public void putSecureData(String namespace, String name, byte[] data, String description,
+  public void putSecureData(String namespace, String name, String data, String description,
                             Map<String, String> properties) throws IOException {
     KeyProvider.Options options = new KeyProvider.Options(conf);
     options.setDescription(description);
     options.setAttributes(properties);
-    options.setBitLength(data.length * Byte.SIZE);
+    byte[] buff = data.getBytes(Charsets.UTF_8);
+    options.setBitLength(buff.length * Byte.SIZE);
     String keyName = getKeyName(namespace, name);
     try {
-      provider.createKey(keyName, data, options);
+      provider.createKey(keyName, buff, options);
     } catch (IOException e) {
       throw new IOException("Failed to store the key. " + name + " under namespace " + namespace, e);
     }

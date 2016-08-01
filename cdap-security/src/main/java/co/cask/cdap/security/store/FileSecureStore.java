@@ -22,6 +22,7 @@ import co.cask.cdap.api.security.store.SecureStoreManager;
 import co.cask.cdap.api.security.store.SecureStoreMetadata;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
+import com.google.common.base.Charsets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
@@ -104,11 +105,11 @@ public class FileSecureStore implements SecureStore, SecureStoreManager {
    * @throws IOException If it failed to store the key in the store.
    */
   @Override
-  public void putSecureData(String namespace, String name, byte[] data, String description,
+  public void putSecureData(String namespace, String name, String data, String description,
                             Map<String, String> properties) throws IOException {
     String keyName = getKeyName(namespace, name);
     SecureStoreMetadata meta = SecureStoreMetadata.of(name, description, properties);
-    SecureStoreData secureStoreData = new SecureStoreData(meta, data);
+    SecureStoreData secureStoreData = new SecureStoreData(meta, data.getBytes(Charsets.UTF_8));
     writeLock.lock();
     try {
       if (keyStore.containsAlias(keyName)) {
