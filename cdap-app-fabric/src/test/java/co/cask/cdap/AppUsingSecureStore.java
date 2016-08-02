@@ -70,7 +70,7 @@ public class AppUsingSecureStore extends AbstractApplication {
     }
   }
 
-  private static class SecureStoreHandler extends AbstractHttpServiceHandler {
+  public static class SecureStoreHandler extends AbstractHttpServiceHandler {
     private String namespace;
 
     @Override
@@ -115,7 +115,7 @@ public class AppUsingSecureStore extends AbstractApplication {
   }
 
 
-  private static class SparkSecureStoreProgram extends AbstractSpark implements JavaSparkMain {
+  public static class SparkSecureStoreProgram extends AbstractSpark implements JavaSparkMain {
     @Override
     public void configure() {
       setName(SPARK_NAME);
