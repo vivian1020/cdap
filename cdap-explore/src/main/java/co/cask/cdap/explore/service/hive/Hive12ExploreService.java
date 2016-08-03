@@ -74,10 +74,9 @@ public class Hive12ExploreService extends BaseHiveExploreService {
                               @Named(Constants.Explore.PREVIEWS_DIR_NAME) File previewsDir,
                               @Named(Constants.Explore.CREDENTIALS_DIR_NAME) File credentialsDir,
                               StreamAdmin streamAdmin, NamespaceQueryAdmin namespaceQueryAdmin,
-                              SystemDatasetInstantiatorFactory datasetInstantiatorFactory,
-                              Impersonator impersonator) {
+                              SystemDatasetInstantiatorFactory datasetInstantiatorFactory) {
     super(txClient, datasetFramework, cConf, hConf, previewsDir, credentialsDir, streamAdmin, namespaceQueryAdmin,
-          datasetInstantiatorFactory, impersonator);
+          datasetInstantiatorFactory);
   }
 
   @Override

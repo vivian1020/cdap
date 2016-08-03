@@ -160,7 +160,6 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
   private final File credentialsDir;
   private final ScheduledExecutorService metastoreClientsExecutorService;
   private final NamespaceQueryAdmin namespaceQueryAdmin;
-  private final Impersonator impersonator;
 
   private final ThreadLocal<Supplier<IMetaStoreClient>> metastoreClientLocal;
 
@@ -190,8 +189,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
                                    CConfiguration cConf, Configuration hConf,
                                    File previewsDir, File credentialsDir, StreamAdmin streamAdmin,
                                    NamespaceQueryAdmin namespaceQueryAdmin,
-                                   SystemDatasetInstantiatorFactory datasetInstantiatorFactory,
-                                   Impersonator impersonator) {
+                                   SystemDatasetInstantiatorFactory datasetInstantiatorFactory) {
     this.cConf = cConf;
     this.hConf = hConf;
     this.schedulerQueueResolver = new SchedulerQueueResolver(cConf, namespaceQueryAdmin);
@@ -201,7 +199,6 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     this.metastoreClientReferences = Maps.newConcurrentMap();
     this.metastoreClientReferenceQueue = new ReferenceQueue<>();
     this.namespaceQueryAdmin = namespaceQueryAdmin;
-    this.impersonator = impersonator;
 
     // Create a Timer thread to periodically collect metastore clients that are no longer in used and call close on them
     this.metastoreClientsExecutorService =
@@ -213,7 +210,7 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
     this.activeHandleCache =
       CacheBuilder.newBuilder()
         .expireAfterWrite(cConf.getLong(Constants.Explore.ACTIVE_OPERATION_TIMEOUT_SECS), TimeUnit.SECONDS)
-        .removalListener(new ActiveOperationRemovalHandler(this, scheduledExecutorService, impersonator))
+        .removalListener(new ActiveOperationRemovalHandler(this, scheduledExecutorService))
         .build();
     this.inactiveHandleCache =
       CacheBuilder.newBuilder()
@@ -1065,20 +1062,6 @@ public abstract class BaseHiveExploreService extends AbstractIdleService impleme
       return getResultSchemaInternal(operationHandle);
     } catch (HiveSQLException e) {
       throw getSqlException(e);
-    }
-  }
-
-  // TODO: move this method?
-
-  // helper method to throw only ExploreException and SQLException, since we know that the callables used
-  // only throw those checked exceptions
-  private <T> T doAs(NamespaceId namespaceId, Callable<T> callable) throws ExploreException, SQLException {
-    try {
-      return impersonator.doAs(namespaceId, callable);
-    } catch (ExploreException | HiveSQLException e) {
-      throw e;
-    } catch (Exception e) {
-      throw Throwables.propagate(e);
     }
   }
 
