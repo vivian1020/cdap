@@ -31,7 +31,7 @@ public interface SecureStoreManager {
   /**
    * @param namespace The namespace that this key belongs to.
    * @param name This is the identifier that will be used to retrieve this element.
-   * @param data The sensitive data that has to be securely stored. Passed in as utf-8 formatted byte array.
+   * @param data The sensitive data that has to be securely stored
    * @param description User provided description of the entry.
    * @param properties associated with this element.
    * @throws IOException If the attempt to store the element failed.
