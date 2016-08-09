@@ -68,7 +68,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-public class DefaultSecureStoreServiceTest {
+public class AuthorizingSecureStoreServiceTest {
   private static final Principal ALICE = new Principal("alice", Principal.PrincipalType.USER);
   private static final Principal BOB = new Principal("bob", Principal.PrincipalType.USER);
   private static final String KEY1 = "key1";
