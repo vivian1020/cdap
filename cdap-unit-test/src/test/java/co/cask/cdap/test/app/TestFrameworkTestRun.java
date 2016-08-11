@@ -1559,17 +1559,8 @@ public class TestFrameworkTestRun extends TestFrameworkTestBase {
     }
   }
   private String callServicePut(URL serviceURL, String path, String body) throws IOException {
-    HttpURLConnection connection = (HttpURLConnection) new URL(serviceURL.toString() + path).openConnection();
-    connection.setDoOutput(true);
-    connection.setRequestMethod("PUT");
-    try (OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream())) {
-      out.write(body);
-    }
-    try (
-      BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), Charsets.UTF_8))
-    ) {
-      Assert.assertEquals(200, connection.getResponseCode());
-      return reader.readLine();
-    }
+    HttpResponse response = HttpRequests.execute(HttpRequest.put(new URL(serviceURL.toString() + path)).build());
+    Assert.assertEquals(HttpResponseStatus.OK.getCode(), response.getResponseCode());
+    return response.getResponseBodyAsString();
   }
 }

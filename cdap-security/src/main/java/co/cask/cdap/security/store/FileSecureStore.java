@@ -90,7 +90,7 @@ public class FileSecureStore implements SecureStore, SecureStoreManager {
   private final KeyStore keyStore;
 
   @Inject
-  FileSecureStore(CConfiguration cConf, SConfiguration sConf, NamespaceQueryAdmin namespaceQueryAdmin)
+  public FileSecureStore(CConfiguration cConf, SConfiguration sConf, NamespaceQueryAdmin namespaceQueryAdmin)
     throws IOException {
     // Get the path to the keystore file
     String pathString = cConf.get(Constants.Security.Store.FILE_PATH);
