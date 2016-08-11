@@ -33,6 +33,8 @@ import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -164,7 +166,7 @@ public class SecureStoreModules extends RuntimeModule {
     public T get() {
       boolean kmsBacked = KMS_BACKED.equalsIgnoreCase(cConf.get(Constants.Security.Store.PROVIDER));
       boolean fileBacked = FILE_BACKED.equalsIgnoreCase(cConf.get(Constants.Security.Store.PROVIDER));
-      boolean validPassword = !Strings.isNullOrEmpty(sConf.get(Constants.Security.Store.FILE_PASSWORD));
+      boolean validPassword = !Strings.isNullOrEmpty(cConf.get(Constants.Security.Store.FILE_PASSWORD));
 
       if (fileBacked && validPassword) {
         return (T) injector.getInstance(FileSecureStore.class);
