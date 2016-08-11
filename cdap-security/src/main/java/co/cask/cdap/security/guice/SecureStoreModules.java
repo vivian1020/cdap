@@ -130,8 +130,8 @@ public class SecureStoreModules extends RuntimeModule {
 
       if (FILE_BACKED.equalsIgnoreCase(cConf.get(Constants.Security.Store.PROVIDER))) {
         throw new IllegalArgumentException("Only KMS based provider is supported in distributed mode. " +
-                                             "To be able to use secure store in a distributed environment you" +
-                                             "will need to use the Hadoop KMS based provider.");
+                   "To be able to use secure store in a distributed environment you" +
+                   "will need to use the Hadoop KMS based provider.");
       }
       return (T) injector.getInstance(DummySecureStore.class);
     }
@@ -166,7 +166,7 @@ public class SecureStoreModules extends RuntimeModule {
     public T get() {
       boolean kmsBacked = KMS_BACKED.equalsIgnoreCase(cConf.get(Constants.Security.Store.PROVIDER));
       boolean fileBacked = FILE_BACKED.equalsIgnoreCase(cConf.get(Constants.Security.Store.PROVIDER));
-      boolean validPassword = !Strings.isNullOrEmpty(cConf.get(Constants.Security.Store.FILE_PASSWORD));
+      boolean validPassword = !Strings.isNullOrEmpty(sConf.get(Constants.Security.Store.FILE_PASSWORD));
 
       if (fileBacked && validPassword) {
         return (T) injector.getInstance(FileSecureStore.class);
