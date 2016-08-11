@@ -128,8 +128,8 @@ public class SecureStoreModules extends RuntimeModule {
 
       if (FILE_BACKED.equalsIgnoreCase(cConf.get(Constants.Security.Store.PROVIDER))) {
         throw new IllegalArgumentException("Only KMS based provider is supported in distributed mode. " +
-                   "To be able to use secure store in a distributed environment you" +
-                   "will need to use the Hadoop KMS based provider.");
+                                             "To be able to use secure store in a distributed environment you" +
+                                             "will need to use the Hadoop KMS based provider.");
       }
       return (T) injector.getInstance(DummySecureStore.class);
     }
