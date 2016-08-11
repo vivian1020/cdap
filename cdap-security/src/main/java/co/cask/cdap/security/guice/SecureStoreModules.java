@@ -68,8 +68,8 @@ public class SecureStoreModules extends RuntimeModule {
     return new AbstractModule() {
       @Override
       protected void configure() {
-        bind(SecureStore.class).toProvider(new TypeLiteral<InMemoryStoreProvider<SecureStore>>() { });
-        bind(SecureStoreManager.class).toProvider(new TypeLiteral<InMemoryStoreProvider<SecureStoreManager>>() { });
+        bind(SecureStore.class).toProvider(new TypeLiteral<StoreProvider<SecureStore>>() { });
+        bind(SecureStoreManager.class).toProvider(new TypeLiteral<StoreProvider<SecureStoreManager>>() { });
       }
     };
   }
@@ -183,36 +183,6 @@ public class SecureStoreModules extends RuntimeModule {
                                              "your cdap-security.xml.");
       }
       return (T) injector.getInstance(DummySecureStore.class);
-    }
-  }
-
-  @Singleton
-  private static final class InMemoryStoreProvider<T> implements Provider<T> {
-    private final CConfiguration cConf;
-    private final SConfiguration sConf;
-    private final Injector injector;
-    private final NamespaceQueryAdmin namespaceQueryAdmin;
-
-    @Inject
-    private InMemoryStoreProvider(final CConfiguration cConf, SConfiguration sConf, Injector injector,
-                                  NamespaceQueryAdmin namespaceQueryAdmin) {
-      this.cConf = cConf;
-      this.sConf = sConf;
-      this.injector = injector;
-      this.namespaceQueryAdmin = namespaceQueryAdmin;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public T get() {
-      cConf.set(Constants.Security.Store.PROVIDER, "file");
-      cConf.set(Constants.Security.Store.FILE_PATH, System.getProperty("java.io.tmpdir"));
-      sConf.set(Constants.Security.Store.FILE_PASSWORD, "secret");
-      try {
-        return (T) new FileSecureStore(cConf, sConf, namespaceQueryAdmin);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
     }
   }
 }
