@@ -19,12 +19,11 @@ package co.cask.cdap.internal.app.services;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.conf.SConfiguration;
-import co.cask.cdap.common.discovery.EndpointStrategy;
-import co.cask.cdap.common.discovery.RandomEndpointStrategy;
 import co.cask.cdap.common.namespace.NamespaceAdmin;
 import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.data2.datafabric.dataset.service.DatasetService;
 import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetOpExecutor;
+import co.cask.cdap.gateway.handlers.meta.RemoteSystemOperationsService;
 import co.cask.cdap.internal.guice.AppFabricTestModule;
 import co.cask.cdap.internal.test.AppJarHelper;
 import co.cask.cdap.proto.Id;
@@ -43,7 +42,6 @@ import co.cask.cdap.security.spi.authentication.SecurityRequestContext;
 import co.cask.cdap.security.spi.authorization.Authorizer;
 import co.cask.cdap.security.spi.authorization.UnauthorizedException;
 import co.cask.tephra.TransactionManager;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -80,21 +78,20 @@ public class AuthorizingSecureStoreServiceTest {
   private static AuthorizationEnforcementService authorizationEnforcementService;
   private static AppFabricServer appFabricServer;
   private static DiscoveryServiceClient discoveryServiceClient;
+  private static RemoteSystemOperationsService remoteSystemOperationsService;
 
   @ClassRule
   public static final TemporaryFolder TEMPORARY_FOLDER = new TemporaryFolder();
 
   @BeforeClass
   public static void setup() throws Exception {
+    CConfiguration cConf = createCConf();
     SConfiguration sConf = SConfiguration.create();
     sConf.set(Constants.Security.Store.FILE_PASSWORD, "secret");
     final Injector injector = Guice.createInjector(new AppFabricTestModule(createCConf(), sConf));
     injector.getInstance(TransactionManager.class).startAndWait();
     injector.getInstance(DatasetOpExecutor.class).startAndWait();
-    discoveryServiceClient = injector.getInstance(DiscoveryServiceClient.class);
-    DatasetService datasetService = injector.getInstance(DatasetService.class);
-    datasetService.startAndWait();
-    waitForService(Constants.Service.DATASET_EXECUTOR);
+    injector.getInstance(DatasetService.class).startAndWait();
     appFabricServer = injector.getInstance(AppFabricServer.class);
     appFabricServer.startAndWait();
     authorizationEnforcementService = injector.getInstance(AuthorizationEnforcementService.class);
@@ -195,12 +192,6 @@ public class AuthorizingSecureStoreServiceTest {
     };
     Assert.assertTrue(Sets.filter(authorizer.listPrivileges(ALICE), secureKeyIdFilter).isEmpty());
     Assert.assertTrue(Sets.filter(authorizer.listPrivileges(BOB), secureKeyIdFilter).isEmpty());
-  }
-
-  private static void waitForService(String service) {
-    EndpointStrategy endpointStrategy = new RandomEndpointStrategy(discoveryServiceClient.discover(service));
-    Preconditions.checkNotNull(endpointStrategy.pick(5, TimeUnit.SECONDS),
-                               "%s service is not up after 5 seconds", service);
   }
 
   private void grantAndAssertSuccess(EntityId entityId, Principal principal, Set<Action> actions) throws Exception {
