@@ -16,9 +16,7 @@
 
 package co.cask.cdap.security.store;
 
-import co.cask.cdap.api.security.store.SecureStore;
 import co.cask.cdap.api.security.store.SecureStoreData;
-import co.cask.cdap.api.security.store.SecureStoreManager;
 import co.cask.cdap.api.security.store.SecureStoreMetadata;
 import co.cask.cdap.common.AlreadyExistsException;
 import co.cask.cdap.common.NamespaceNotFoundException;
@@ -29,6 +27,9 @@ import co.cask.cdap.common.conf.SConfiguration;
 import co.cask.cdap.common.namespace.NamespaceQueryAdmin;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.id.SecureKeyId;
+import co.cask.cdap.security.authorization.AuthorizerInstantiator;
+import co.cask.cdap.security.spi.authentication.AuthenticationContext;
+import co.cask.cdap.security.spi.authorization.AuthorizationEnforcer;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
@@ -76,7 +77,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  * class to two interfaces and we need the instance to be shared between them.
  */
 @Singleton
-public class FileSecureStore implements SecureStore, SecureStoreManager {
+public final class FileSecureStore extends AbstractSecureStore {
   private static final Logger LOG = LoggerFactory.getLogger(FileSecureStore.class);
   private static final String SCHEME_NAME = "jceks";
   /** Separator between the namespace name and the key name */
@@ -90,8 +91,12 @@ public class FileSecureStore implements SecureStore, SecureStoreManager {
   private final KeyStore keyStore;
 
   @Inject
-  public FileSecureStore(CConfiguration cConf, SConfiguration sConf, NamespaceQueryAdmin namespaceQueryAdmin)
+  FileSecureStore(CConfiguration cConf, SConfiguration sConf, NamespaceQueryAdmin namespaceQueryAdmin,
+                  AuthorizerInstantiator authorizerInstantiator,
+                  AuthorizationEnforcer authorizationEnforcer,
+                  AuthenticationContext authenticationContext)
     throws IOException {
+    super(authorizerInstantiator, authorizationEnforcer, authenticationContext);
     // Get the path to the keystore file
     String pathString = cConf.get(Constants.Security.Store.FILE_PATH);
     Path dir = Paths.get(pathString);
@@ -120,7 +125,7 @@ public class FileSecureStore implements SecureStore, SecureStoreManager {
    * or if there was problem persisting the keystore.
    */
   @Override
-  public void putSecureData(String namespace, String name, String data, String description,
+  public void put(String namespace, String name, String data, String description,
                             Map<String, String> properties) throws Exception {
     checkNamespaceExists(namespace);
     String keyName = getKeyName(namespace, name);
@@ -158,7 +163,7 @@ public class FileSecureStore implements SecureStore, SecureStoreManager {
    * or if there was a problem persisting the keystore after deleting the element.
    */
   @Override
-  public void deleteSecureData(String namespace, String name) throws Exception {
+  public void delete(String namespace, String name) throws Exception {
     checkNamespaceExists(namespace);
     String keyName = getKeyName(namespace, name);
     Key key = null;
@@ -193,7 +198,7 @@ public class FileSecureStore implements SecureStore, SecureStoreManager {
    * @throws IOException If there was a problem reading from the keystore.
    */
   @Override
-  public List<SecureStoreMetadata> listSecureData(String namespace) throws Exception {
+  public List<SecureStoreMetadata> list(String namespace) throws Exception {
     checkNamespaceExists(namespace);
     readLock.lock();
     try {
@@ -225,7 +230,7 @@ public class FileSecureStore implements SecureStore, SecureStoreManager {
    * @throws IOException If there was a problem reading from the store.
    */
   @Override
-  public SecureStoreData getSecureData(String namespace, String name) throws Exception {
+  public SecureStoreData get(String namespace, String name) throws Exception {
     checkNamespaceExists(namespace);
     String keyName = getKeyName(namespace, name);
     readLock.lock();

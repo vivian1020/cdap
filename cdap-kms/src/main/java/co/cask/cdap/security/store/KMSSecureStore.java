@@ -26,6 +26,9 @@ import co.cask.cdap.common.namespace.NamespaceQueryAdmin;
 import co.cask.cdap.common.security.DelegationTokensUpdater;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.id.SecureKeyId;
+import co.cask.cdap.security.authorization.AuthorizerInstantiator;
+import co.cask.cdap.security.spi.authentication.AuthenticationContext;
+import co.cask.cdap.security.spi.authorization.AuthorizationEnforcer;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.inject.Inject;
@@ -56,7 +59,7 @@ import java.util.Map;
  */
 // TODO: Find a better way to handle javadoc so this class does not need to be public.
 @SuppressWarnings("unused")
-public class KMSSecureStore implements SecureStore, SecureStoreManager, DelegationTokensUpdater {
+public class KMSSecureStore extends AbstractSecureStore implements DelegationTokensUpdater {
   private static final Logger LOG = LoggerFactory.getLogger(KMSSecureStore.class);
   /** Separator between the namespace name and the key name */
   private static final String NAME_SEPARATOR = ":";
@@ -76,7 +79,11 @@ public class KMSSecureStore implements SecureStore, SecureStoreManager, Delegati
    * @throws IOException If the authority or the port could not be read from the provider URI.
    */
   @Inject
-  KMSSecureStore(Configuration conf, NamespaceQueryAdmin namespaceQueryAdmin) throws IOException, URISyntaxException {
+  KMSSecureStore(Configuration conf, NamespaceQueryAdmin namespaceQueryAdmin,
+                 AuthorizerInstantiator authorizerInstantiator,
+                 AuthorizationEnforcer authorizationEnforcer,
+                 AuthenticationContext authenticationContext) throws IOException, URISyntaxException {
+    super(authorizerInstantiator, authorizationEnforcer, authenticationContext);
     this.conf = conf;
     this.namespaceQueryAdmin = namespaceQueryAdmin;
     try {
@@ -111,7 +118,7 @@ public class KMSSecureStore implements SecureStore, SecureStoreManager, Delegati
   // Unfortunately KeyProvider does not specify
   // the underlying cause except in the message, so we can not throw a more specific exception.
   @Override
-  public void putSecureData(String namespace, String name, String data, String description,
+  public void put(String namespace, String name, String data, String description,
                             Map<String, String> properties) throws Exception {
     checkNamespaceExists(namespace);
     KeyProvider.Options options = new KeyProvider.Options(conf);
@@ -138,7 +145,7 @@ public class KMSSecureStore implements SecureStore, SecureStoreManager, Delegati
    * the underlying cause except in the message, so we can not throw a more specific exception.
    */
   @Override
-  public void deleteSecureData(String namespace, String name) throws Exception {
+  public void delete(String namespace, String name) throws Exception {
     checkNamespaceExists(namespace);
     try {
       provider.deleteKey(getKeyName(namespace, name));
@@ -162,7 +169,7 @@ public class KMSSecureStore implements SecureStore, SecureStoreManager, Delegati
   // Unfortunately KeyProvider does not specify the underlying cause except in the message, so we can not throw a
   // more specific exception.
   @Override
-  public List<SecureStoreMetadata> listSecureData(String namespace) throws Exception {
+  public List<SecureStoreMetadata> list(String namespace) throws Exception {
     checkNamespaceExists(namespace);
     String prefix = namespace + NAME_SEPARATOR;
     List<String> keysInNamespace = new ArrayList<>();
@@ -204,7 +211,7 @@ public class KMSSecureStore implements SecureStore, SecureStoreManager, Delegati
   // Unfortunately KeyProvider does not specify the underlying cause except in the message, so we can not throw a
   // more specific exception.
   @Override
-  public SecureStoreData getSecureData(String namespace, String name) throws Exception {
+  public SecureStoreData get(String namespace, String name) throws Exception {
     checkNamespaceExists(namespace);
     String keyName = getKeyName(namespace, name);
     KeyProvider.Metadata metadata = provider.getMetadata(keyName);

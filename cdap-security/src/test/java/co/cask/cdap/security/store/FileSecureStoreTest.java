@@ -27,7 +27,12 @@ import co.cask.cdap.common.conf.SConfiguration;
 import co.cask.cdap.common.namespace.InMemoryNamespaceClient;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
+import co.cask.cdap.security.authorization.AuthorizerInstantiator;
+import co.cask.cdap.security.spi.authentication.AuthenticationContext;
+import co.cask.cdap.security.spi.authorization.AuthorizationEnforcer;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import org.apache.commons.io.Charsets;
 import org.junit.After;
 import org.junit.Assert;
@@ -71,8 +76,12 @@ public class FileSecureStoreTest {
 
   @Before
   public void setUp() throws Exception {
-    CConfiguration conf = CConfiguration.create();
-    conf.set(Constants.Security.Store.FILE_PATH, STORE_PATH);
+    final Injector injector = Guice.createInjector();
+    AuthorizerInstantiator authorizerInstantiator = injector.getInstance(AuthorizerInstantiator.class);
+    AuthorizationEnforcer authorizerEnforcer = injector.getInstance(AuthorizationEnforcer.class);
+    AuthenticationContext authenticationContext = injector.getInstance(AuthenticationContext.class);
+    CConfiguration cConf = CConfiguration.create();
+    cConf.set(Constants.Security.Store.FILE_PATH, STORE_PATH);
     SConfiguration sConf = SConfiguration.create();
     sConf.set(Constants.Security.Store.FILE_PASSWORD, "secret");
     InMemoryNamespaceClient namespaceClient = new InMemoryNamespaceClient();
@@ -84,7 +93,8 @@ public class FileSecureStoreTest {
       .setName(new Id.Namespace(NAMESPACE2))
       .build();
     namespaceClient.create(namespaceMeta);
-    FileSecureStore fileSecureStore = new FileSecureStore(conf, sConf, namespaceClient);
+    FileSecureStore fileSecureStore = new FileSecureStore(cConf, sConf, namespaceClient, authorizerInstantiator,
+                                                          authorizerEnforcer, authenticationContext);
     secureStoreManager = fileSecureStore;
     secureStore = fileSecureStore;
   }
