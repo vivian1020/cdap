@@ -24,9 +24,13 @@ import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.conf.SConfiguration;
+import co.cask.cdap.common.guice.ConfigModule;
 import co.cask.cdap.common.namespace.InMemoryNamespaceClient;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
+import co.cask.cdap.security.auth.context.AuthenticationContextModules;
+import co.cask.cdap.security.authorization.AuthorizationEnforcementModule;
+import co.cask.cdap.security.authorization.AuthorizationTestModule;
 import co.cask.cdap.security.authorization.AuthorizerInstantiator;
 import co.cask.cdap.security.spi.authentication.AuthenticationContext;
 import co.cask.cdap.security.spi.authorization.AuthorizationEnforcer;
@@ -34,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.apache.commons.io.Charsets;
+import org.apache.hadoop.conf.Configuration;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -76,14 +81,17 @@ public class FileSecureStoreTest {
 
   @Before
   public void setUp() throws Exception {
-    final Injector injector = Guice.createInjector();
-    AuthorizerInstantiator authorizerInstantiator = injector.getInstance(AuthorizerInstantiator.class);
-    AuthorizationEnforcer authorizerEnforcer = injector.getInstance(AuthorizationEnforcer.class);
-    AuthenticationContext authenticationContext = injector.getInstance(AuthenticationContext.class);
     CConfiguration cConf = CConfiguration.create();
     cConf.set(Constants.Security.Store.FILE_PATH, STORE_PATH);
     SConfiguration sConf = SConfiguration.create();
     sConf.set(Constants.Security.Store.FILE_PASSWORD, "secret");
+    Injector injector = Guice.createInjector(new ConfigModule(cConf, new Configuration(), sConf),
+                                             new AuthorizationTestModule(),
+                                             new AuthorizationEnforcementModule().getInMemoryModules(),
+                                             new AuthenticationContextModules().getNoOpModule());
+    AuthorizerInstantiator authorizerInstantiator = injector.getInstance(AuthorizerInstantiator.class);
+    AuthorizationEnforcer authorizerEnforcer = injector.getInstance(AuthorizationEnforcer.class);
+    AuthenticationContext authenticationContext = injector.getInstance(AuthenticationContext.class);
     InMemoryNamespaceClient namespaceClient = new InMemoryNamespaceClient();
     NamespaceMeta namespaceMeta = new NamespaceMeta.Builder()
       .setName(new Id.Namespace(NAMESPACE1))
@@ -158,7 +166,7 @@ public class FileSecureStoreTest {
 
   @Test(expected = NotFoundException.class)
   public void testGetNonExistent() throws Exception {
-    secureStore.getSecureData(NAMESPACE1, "Dummy");
+    secureStore.getSecureData(NAMESPACE1, "dummy");
   }
 
   @Test(expected = NotFoundException.class)

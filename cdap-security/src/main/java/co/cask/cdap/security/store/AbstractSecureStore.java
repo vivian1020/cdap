@@ -30,7 +30,6 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.proto.id.SecureKeyId;
 import co.cask.cdap.proto.security.Action;
 import co.cask.cdap.proto.security.Principal;
-import co.cask.cdap.proto.security.SecureKeyCreateRequest;
 import co.cask.cdap.proto.security.SecureKeyListEntry;
 import co.cask.cdap.security.authorization.AuthorizerInstantiator;
 import co.cask.cdap.security.spi.authentication.AuthenticationContext;
