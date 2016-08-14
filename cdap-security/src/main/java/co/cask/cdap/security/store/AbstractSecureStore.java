@@ -53,7 +53,6 @@ abstract class AbstractSecureStore implements SecureStore, SecureStoreManager {
   private final AuthenticationContext authenticationContext;
   private final AuthorizationEnforcer authorizationEnforcer;
 
-  @Inject
   AbstractSecureStore(AuthorizerInstantiator authorizerInstantiator,
                       AuthorizationEnforcer authorizationEnforcer,
                       AuthenticationContext authenticationContext) {
