@@ -34,11 +34,9 @@ import co.cask.cdap.proto.security.SecureKeyListEntry;
 import co.cask.cdap.security.authorization.AuthorizerInstantiator;
 import co.cask.cdap.security.spi.authentication.AuthenticationContext;
 import co.cask.cdap.security.spi.authorization.AuthorizationEnforcer;
-import co.cask.cdap.security.spi.authorization.Authorizer;
 import co.cask.cdap.security.spi.authorization.UnauthorizedException;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,18 +47,17 @@ import java.util.Map;
  * Default implementation of the service that manages access to the Secure Store,
  */
 abstract class AbstractSecureStore implements SecureStore, SecureStoreManager {
-  private final Authorizer authorizer;
+  private final AuthorizerInstantiator authorizer;
   private final AuthenticationContext authenticationContext;
   private final AuthorizationEnforcer authorizationEnforcer;
 
   AbstractSecureStore(AuthorizerInstantiator authorizerInstantiator,
                       AuthorizationEnforcer authorizationEnforcer,
                       AuthenticationContext authenticationContext) {
-    this.authorizer = authorizerInstantiator.get();
+    this.authorizer = authorizerInstantiator;
     this.authorizationEnforcer = authorizationEnforcer;
     this.authenticationContext = authenticationContext;
   }
-
 
   abstract List<SecureStoreMetadata> list(String namespace) throws Exception;
   abstract SecureStoreData get(String namespace, String name) throws Exception;
@@ -138,7 +135,7 @@ abstract class AbstractSecureStore implements SecureStore, SecureStoreManager {
                                       "securely.");
     }
     put(namespace, name, value, description, properties);
-    authorizer.grant(new SecureKeyId(namespace, name), principal, ImmutableSet.of(Action.ALL));
+    authorizer.get().grant(new SecureKeyId(namespace, name), principal, ImmutableSet.of(Action.ALL));
   }
 
   /**
@@ -155,6 +152,6 @@ abstract class AbstractSecureStore implements SecureStore, SecureStoreManager {
     SecureKeyId secureKeyId = new SecureKeyId(namespace, name);
     authorizationEnforcer.enforce(secureKeyId, principal, Action.ADMIN);
     delete(namespace, name);
-    authorizer.revoke(secureKeyId);
+    authorizer.get().revoke(secureKeyId);
   }
 }

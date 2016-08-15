@@ -119,8 +119,9 @@ public class AuthorizingSecureStoreServiceTest {
 
   @AfterClass
   public static void cleanup() {
-    appFabricServer.stopAndWait();
+    remoteSystemOperationsService.stopAndWait();
     authorizationEnforcementService.stopAndWait();
+    appFabricServer.stopAndWait();
   }
 
   private static CConfiguration createCConf() throws Exception {
@@ -176,7 +177,7 @@ public class AuthorizingSecureStoreServiceTest {
     SecurityRequestContext.setUserId(BOB.getName());
     grantAndAssertSuccess(NamespaceId.DEFAULT, BOB, EnumSet.of(Action.READ));
     grantAndAssertSuccess(secureKeyId1, BOB, EnumSet.of(Action.READ));
-    Assert.assertEquals(VALUE1, secureStore.getSecureData(NamespaceId.DEFAULT.getNamespace(), KEY1));
+    Assert.assertEquals(VALUE1, new String(secureStore.getSecureData(NamespaceId.DEFAULT.getNamespace(), KEY1).get()));
     secureKeyListEntries = secureStore.listSecureData(NamespaceId.DEFAULT.getNamespace());
     Assert.assertEquals(1, secureKeyListEntries.size());
 

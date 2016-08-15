@@ -16,9 +16,7 @@
 
 package co.cask.cdap.security.store;
 
-import co.cask.cdap.api.security.store.SecureStore;
 import co.cask.cdap.api.security.store.SecureStoreData;
-import co.cask.cdap.api.security.store.SecureStoreManager;
 import co.cask.cdap.api.security.store.SecureStoreMetadata;
 import co.cask.cdap.common.NamespaceNotFoundException;
 import co.cask.cdap.common.NotFoundException;
