@@ -24,7 +24,7 @@
   <parent>
     <groupId>co.cask.cdap</groupId>
     <artifactId>cdap</artifactId>
-    <version>3.5.1-SNAPSHOT</version>
+    <version>4.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>cdap-standalone</artifactId>
@@ -375,6 +375,10 @@
                       <directory>${project.parent.basedir}/cdap-ui/dist</directory>
                       <targetPath>ui/dist</targetPath>
                     </resource>
+		    <resource>
+		      <directory>${project.parent.basedir}/cdap-ui/cdap_dist</directory>
+                      <targetPath>ui/cdap_dist</targetPath>
+		    </resource>
                     <resource>
                       <directory>${project.parent.basedir}/cdap-ui/node_modules</directory>
                       <targetPath>ui/node_modules</targetPath>
