@@ -34,10 +34,12 @@ import co.cask.cdap.proto.metadata.MetadataRecord;
 import co.cask.cdap.proto.metadata.MetadataScope;
 import co.cask.cdap.proto.metadata.MetadataSearchResultRecord;
 import co.cask.cdap.proto.metadata.MetadataSearchTargetType;
+import co.cask.cdap.proto.metadata.lineage.MetadataSearchResponse;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpResponder;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
@@ -54,11 +56,15 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.net.URLDecoder;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import javax.annotation.Nullable;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -77,14 +83,28 @@ public class MetadataHttpHandler extends AbstractHttpHandler {
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
   private static final Type LIST_STRING_TYPE = new TypeToken<List<String>>() { }.getType();
   private static final Type SET_METADATA_RECORD_TYPE = new TypeToken<Set<MetadataRecord>>() { }.getType();
-  private static final Type SET_METADATA_SEARCH_RESULT_TYPE =
-    new TypeToken<Set<MetadataSearchResultRecord>>() { }.getType();
 
   private static final Function<String, MetadataSearchTargetType> STRING_TO_TARGET_TYPE =
     new Function<String, MetadataSearchTargetType>() {
       @Override
       public MetadataSearchTargetType apply(String input) {
         return MetadataSearchTargetType.valueOf(input.toUpperCase());
+      }
+    };
+  private static final Comparator<MetadataSearchResultRecord> NAME_ASCENDING_COMPARATOR =
+    new Comparator<MetadataSearchResultRecord>() {
+      @Override
+      public int compare(MetadataSearchResultRecord o1, MetadataSearchResultRecord o2) {
+        return Integer.valueOf(o1.getEntityId().getEntityName())
+          .compareTo(Integer.valueOf(o2.getEntityId().getEntityName()));
+      }
+    };
+  private static final Comparator<MetadataSearchResultRecord> NAME_DESCENDING_COMPARATOR =
+    new Comparator<MetadataSearchResultRecord>() {
+      @Override
+      public int compare(MetadataSearchResultRecord o1, MetadataSearchResultRecord o2) {
+        return Integer.valueOf(o2.getEntityId().getEntityName())
+          .compareTo(Integer.valueOf(o1.getEntityId().getEntityName()));
       }
     };
 
@@ -831,24 +851,59 @@ public class MetadataHttpHandler extends AbstractHttpHandler {
     return toReturn.toArray(new String[toReturn.size()]);
   }
 
-  // *** Search endpoints ***
-
   @GET
   @Path("/namespaces/{namespace-id}/metadata/search")
   public void searchMetadata(HttpRequest request, HttpResponder responder,
                              @PathParam("namespace-id") String namespaceId,
                              @QueryParam("query") String searchQuery,
-                             @QueryParam("target") List<String> targets) throws Exception {
-    Set<MetadataSearchTargetType> types = ImmutableSet.of();
+                             @QueryParam("target") List<String> targets,
+                             @QueryParam("sort") @DefaultValue("") String sort,
+                             @QueryParam("offset") @DefaultValue("0") int offset,
+                             @QueryParam("size") @DefaultValue("") String sizeStr) throws Exception {
+    Set<MetadataSearchTargetType> types = Collections.emptySet();
     if (targets != null) {
       types = ImmutableSet.copyOf(Iterables.transform(targets, STRING_TO_TARGET_TYPE));
     }
 
-    Set<MetadataSearchResultRecord> results = metadataAdmin.searchMetadata(namespaceId,
-                                                                           URLDecoder.decode(searchQuery, "UTF-8"),
-                                                                           types);
 
-    responder.sendJson(HttpResponseStatus.OK, results, SET_METADATA_SEARCH_RESULT_TYPE, GSON);
+    String sortBy = "name";
+    String sortOrder = "asc";
+    if (!sort.isEmpty()) {
+      // TODO: This should perhaps be thrown from the indexer
+      String[] sortSplit = sort.split("\\s+");
+      if (sortSplit.length != 2) {
+        throw new BadRequestException("'sort' parameter should be a space separated string containing the field " +
+                                        "('name' or 'create_time') and the sort order ('asc' or 'desc'). Found " +
+                                        sort);
+      }
+      sortBy = sortSplit[0];
+      sortOrder = sortSplit[1];
+      if (!"name".equalsIgnoreCase(sortBy) && !"create_time".equalsIgnoreCase(sortBy)) {
+        throw new BadRequestException("Sort field must be one of 'name' or 'create_time'. Found " + sortBy);
+      }
+      if (!"asc".equalsIgnoreCase(sortOrder) && !"desc".equalsIgnoreCase(sortOrder)) {
+        throw new BadRequestException("Sort order must be one of 'asc' or 'desc'. Found " + sortOrder);
+      }
+    }
+
+    int size = Integer.MAX_VALUE;
+    if (!sizeStr.isEmpty()) {
+      try {
+        size = Integer.parseInt(sizeStr);
+      } catch (NumberFormatException e) {
+        throw new BadRequestException(String.format("Parameter size should be numeric. Found %s.", sizeStr));
+      }
+    }
+    if (searchQuery == null) {
+      throw new BadRequestException("Parameter 'query' should be passed to the search API.");
+    }
+    Set<MetadataSearchResultRecord> results =
+      metadataAdmin.searchMetadata(namespaceId, URLDecoder.decode(searchQuery, "UTF-8"), types);
+
+    TreeSet<MetadataSearchResultRecord> sorted = applySorting(results, sortBy, sortOrder);
+    TreeSet<MetadataSearchResultRecord> paginated = paginate(sorted, offset, size);
+    MetadataSearchResponse response = new MetadataSearchResponse(sort, offset, size, sorted.size(), paginated);
+    responder.sendJson(HttpResponseStatus.OK, response, MetadataSearchResponse.class, GSON);
   }
 
   private Set<MetadataRecord> getMetadata(NamespacedEntityId namespacedEntityId,
@@ -879,5 +934,40 @@ public class MetadataHttpHandler extends AbstractHttpHandler {
       throw new BadRequestException(String.format("Invalid metadata scope '%s'. Expected '%s' or '%s'",
                                                   scope, MetadataScope.USER, MetadataScope.SYSTEM));
     }
+  }
+
+  private TreeSet<MetadataSearchResultRecord> applySorting(Set<MetadataSearchResultRecord> original, String sortBy,
+                                                       String sortOrder) throws BadRequestException {
+    Comparator<MetadataSearchResultRecord> comparator = getComparator(sortBy, sortOrder);
+    TreeSet<MetadataSearchResultRecord> result = new TreeSet<>(comparator);
+    result.addAll(original);
+    return result;
+  }
+
+  private Comparator<MetadataSearchResultRecord> getComparator(String sortBy,
+                                                               String sortOrder) throws BadRequestException {
+    switch (sortBy) {
+      case "name":
+        switch (sortOrder) {
+          case "asc":
+            return NAME_ASCENDING_COMPARATOR;
+          case "desc":
+            return NAME_DESCENDING_COMPARATOR;
+        }
+      default:
+        throw new BadRequestException("Unexpected sortBy " + sortBy + ". Expected 'name'.");
+    }
+  }
+
+  private TreeSet<MetadataSearchResultRecord> paginate(TreeSet<MetadataSearchResultRecord> sorted,
+                                                       int offset, int size) {
+    if (sorted.isEmpty()) {
+      return sorted;
+    }
+    int endIndex = offset + size;
+    if (endIndex >= sorted.size()) {
+      endIndex = sorted.size() - 1;
+    }
+    return new TreeSet<>(ImmutableList.copyOf(sorted).subList(offset, endIndex));
   }
 }

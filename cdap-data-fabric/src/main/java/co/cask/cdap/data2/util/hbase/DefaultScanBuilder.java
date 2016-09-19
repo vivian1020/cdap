@@ -192,6 +192,12 @@ class DefaultScanBuilder implements ScanBuilder {
   }
 
   @Override
+  public ScanBuilder setReversed(boolean reversed) {
+    scan.setReversed(reversed);
+    return this;
+  }
+
+  @Override
   public Scan build() {
     return scan;
   }

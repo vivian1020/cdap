@@ -32,6 +32,7 @@ public class Scan {
   private final byte[] stopRow;
   @Nullable
   private final Filter filter;
+  private final boolean reversed;
 
   /**
    * Creates {@link Scan} for a given start and stop row keys.
@@ -49,9 +50,21 @@ public class Scan {
    * @param filter filter to be used on scan
    */
   public Scan(@Nullable byte[] startRow, @Nullable byte[] stopRow, @Nullable Filter filter) {
+    this(startRow, stopRow, filter, false);
+  }
+
+  /**
+   * Creates {@link Scan} for a given start and stop row keys and filter.
+   * @param startRow start row inclusive; {@code null} means start from first row of the table
+   * @param stopRow stop row exclusive; {@code null} means scan all rows to the end of the table
+   * @param filter filter to be used on scan
+   * @param reversed specifies if the scan should be in the reverse order; defaults to {@code false}
+   */
+  public Scan(@Nullable byte[] startRow, @Nullable byte[] stopRow, @Nullable Filter filter, boolean reversed) {
     this.startRow = startRow;
     this.stopRow = stopRow;
     this.filter = filter;
+    this.reversed = reversed;
   }
 
   @Nullable
@@ -69,12 +82,17 @@ public class Scan {
     return filter;
   }
 
+  public boolean isReversed() {
+    return reversed;
+  }
+
   @Override
   public String toString() {
     return "Scan{" +
       "startRow=" + Bytes.toStringBinary(startRow) +
       ", stopRow=" + Bytes.toStringBinary(stopRow) +
       ", filter=" + filter +
+      ", reversed=" + reversed +
       '}';
   }
 }

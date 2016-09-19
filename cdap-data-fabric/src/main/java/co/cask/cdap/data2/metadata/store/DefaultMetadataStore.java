@@ -540,17 +540,15 @@ public class DefaultMetadataStore implements MetadataStore {
   }
 
   private MetadataDataset newMetadataDataset(MetadataScope scope) {
+    Id.DatasetInstance dataset = MetadataScope.USER == scope ?
+      BUSINESS_METADATA_INSTANCE_ID :
+      SYSTEM_METADATA_INSTANCE_ID;
     try {
-      return DatasetsUtil.getOrCreateDataset(
-        dsFramework, getMetadataDatasetInstance(scope), MetadataDataset.class.getName(),
-        DatasetProperties.EMPTY, DatasetDefinition.NO_ARGUMENTS, null);
+      return DatasetsUtil.getOrCreateDataset(dsFramework, dataset, MetadataDataset.class.getName(),
+                                             DatasetProperties.EMPTY, DatasetDefinition.NO_ARGUMENTS, null);
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }
-  }
-
-  private Id.DatasetInstance getMetadataDatasetInstance(MetadataScope scope) {
-    return MetadataScope.USER == scope ? BUSINESS_METADATA_INSTANCE_ID : SYSTEM_METADATA_INSTANCE_ID;
   }
 
   /**

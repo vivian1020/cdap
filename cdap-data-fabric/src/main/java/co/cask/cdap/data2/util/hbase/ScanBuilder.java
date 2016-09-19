@@ -82,5 +82,7 @@ public interface ScanBuilder {
 
   ScanBuilder setSmall(boolean small);
 
+  ScanBuilder setReversed(boolean reversed);
+
   Scan build();
 }

@@ -163,7 +163,6 @@ public class DefaultMetadataAdmin implements MetadataAdmin {
   @Override
   public Set<MetadataSearchResultRecord> searchMetadata(String namespaceId, String searchQuery,
                                                         Set<MetadataSearchTargetType> types) throws Exception {
-
     return filterAuthorizedSearchResult(metadataStore.searchMetadataOnType(namespaceId, searchQuery, types));
   }
 

@@ -319,6 +319,7 @@ public class HBaseTable extends BufferingTable {
     }
 
     setFilterIfNeeded(hScan, scan.getFilter());
+    hScan.setReversed(scan.isReversed());
     hScan.setAttribute(TxConstants.TX_OPERATION_ATTRIBUTE_KEY, txCodec.encode(tx));
 
     ResultScanner resultScanner = wrapResultScanner(hTable.getScanner(hScan.build()));

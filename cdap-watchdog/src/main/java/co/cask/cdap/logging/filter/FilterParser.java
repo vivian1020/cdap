@@ -24,7 +24,7 @@ import java.io.StreamTokenizer;
 import java.io.StringReader;
 
 /**
- * Parses string expression into a @{link Filter}.
+ * Parses string expression into a {@link Filter}.
  */
 public final class FilterParser {
   private enum Operator {
