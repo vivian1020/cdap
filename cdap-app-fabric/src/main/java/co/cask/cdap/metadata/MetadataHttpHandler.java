@@ -58,6 +58,7 @@ import java.lang.reflect.Type;
 import java.net.URLDecoder;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -899,7 +900,7 @@ public class MetadataHttpHandler extends AbstractHttpHandler {
       metadataAdmin.searchMetadata(namespaceId, URLDecoder.decode(searchQuery, "UTF-8"), types);
 
     TreeSet<MetadataSearchResultRecord> sorted = applySorting(results, sortBy, sortOrder);
-    TreeSet<MetadataSearchResultRecord> paginated = paginate(sorted, offset, size);
+    Set<MetadataSearchResultRecord> paginated = paginate(sorted, offset, size);
     MetadataSearchResponse response = new MetadataSearchResponse(sort, offset, size, sorted.size(), paginated);
     responder.sendJson(HttpResponseStatus.OK, response, MetadataSearchResponse.class, GSON);
   }
@@ -957,8 +958,8 @@ public class MetadataHttpHandler extends AbstractHttpHandler {
     }
   }
 
-  private TreeSet<MetadataSearchResultRecord> paginate(TreeSet<MetadataSearchResultRecord> sorted,
-                                                       int offset, int size) {
+  private Set<MetadataSearchResultRecord> paginate(TreeSet<MetadataSearchResultRecord> sorted,
+                                                   int offset, int size) {
     if (sorted.isEmpty()) {
       return sorted;
     }
@@ -966,6 +967,6 @@ public class MetadataHttpHandler extends AbstractHttpHandler {
     if (endIndex >= sorted.size()) {
       endIndex = sorted.size() - 1;
     }
-    return new TreeSet<>(ImmutableList.copyOf(sorted).subList(offset, endIndex));
+    return new LinkedHashSet<>(ImmutableList.copyOf(sorted).subList(offset, endIndex));
   }
 }
