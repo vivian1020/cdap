@@ -95,16 +95,14 @@ public class MetadataHttpHandler extends AbstractHttpHandler {
     new Comparator<MetadataSearchResultRecord>() {
       @Override
       public int compare(MetadataSearchResultRecord o1, MetadataSearchResultRecord o2) {
-        return Integer.valueOf(o1.getEntityId().getEntityName())
-          .compareTo(Integer.valueOf(o2.getEntityId().getEntityName()));
+        return o1.getEntityId().getEntityName().compareTo(o2.getEntityId().getEntityName());
       }
     };
   private static final Comparator<MetadataSearchResultRecord> NAME_DESCENDING_COMPARATOR =
     new Comparator<MetadataSearchResultRecord>() {
       @Override
       public int compare(MetadataSearchResultRecord o1, MetadataSearchResultRecord o2) {
-        return Integer.valueOf(o2.getEntityId().getEntityName())
-          .compareTo(Integer.valueOf(o1.getEntityId().getEntityName()));
+        return o2.getEntityId().getEntityName().compareTo(o1.getEntityId().getEntityName());
       }
     };
 
