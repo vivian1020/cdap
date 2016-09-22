@@ -35,7 +35,6 @@ import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.proto.id.ProgramId;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -62,7 +61,7 @@ public class AppLifecycleHttpHandlerTest extends AppFabricTestBase {
   public void testDeployNonExistingNamespace() throws Exception {
     HttpResponse response = deploy(WordCountApp.class, Constants.Gateway.API_VERSION_3_TOKEN, "random");
     Assert.assertEquals(404, response.getStatusLine().getStatusCode());
-    NotFoundException nfe = new NamespaceNotFoundException(Id.Namespace.from("random"));
+    NotFoundException nfe = new NamespaceNotFoundException(new NamespaceId("random"));
     Assert.assertEquals(nfe.getMessage(), readResponse(response));
   }
 

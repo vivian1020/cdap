@@ -112,6 +112,10 @@
       <artifactId>cdap-explore-client</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.twill</groupId>
+      <artifactId>twill-api</artifactId>
+    </dependency>
   </dependencies>
 
 </project>
