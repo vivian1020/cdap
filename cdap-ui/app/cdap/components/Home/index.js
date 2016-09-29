@@ -145,7 +145,8 @@ class Home extends Component {
     filter = this.state.filter,
     sortObj = this.state.sortObj,
     namespace = this.props.params.namespace
-    ) {
+  ) {
+
     this.setState({loading: true});
 
     if (filter.length === 0) {
@@ -200,9 +201,9 @@ class Home extends Component {
   }
 
   isDefaultFilter(){
-      return (this.state.filter.length === defaultFilter.length) && this.state.filter.every((element, index) => {
-        return element === defaultFilter[index];
-      });
+    return (this.state.filter.length === defaultFilter.length) && this.state.filter.every((element, index) => {
+      return element === defaultFilter[index];
+    });
   }
 
   isDefaultSort(){
