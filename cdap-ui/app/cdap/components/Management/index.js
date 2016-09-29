@@ -23,6 +23,7 @@ import AdminDetailPanel from '../AdminDetailPanel';
 import AdminConfigurePane from '../AdminConfigurePane';
 import AdminOverviewPane from '../AdminOverviewPane';
 import AbstractWizard from 'components/AbstractWizard';
+import Helmet from 'react-helmet';
 
 import T from 'i18n-react';
 var shortid = require('shortid');
@@ -156,6 +157,9 @@ class Management extends Component {
 
     return (
        <div className="management">
+        <Helmet
+          title="Administrator"
+        />
         <div className="top-panel">
           <div className="admin-row top-row">
             <InfoCard
