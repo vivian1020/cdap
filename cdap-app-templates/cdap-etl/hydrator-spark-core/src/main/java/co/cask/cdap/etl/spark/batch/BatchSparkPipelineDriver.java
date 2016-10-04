@@ -29,7 +29,7 @@ import co.cask.cdap.etl.batch.BatchPhaseSpec;
 import co.cask.cdap.etl.common.Constants;
 import co.cask.cdap.etl.common.SetMultimapCodec;
 import co.cask.cdap.etl.spark.SparkCollection;
-import co.cask.cdap.etl.spark.SparkPipelineDriver;
+import co.cask.cdap.etl.spark.SparkPipelineRunner;
 import co.cask.cdap.etl.spark.function.BatchSourceFunction;
 import co.cask.cdap.etl.spark.function.PluginFunctionContext;
 import co.cask.cdap.internal.io.SchemaTypeAdapter;
@@ -47,7 +47,7 @@ import java.util.Map;
 /**
  * Batch Spark pipeline driver.
  */
-public class BatchSparkPipelineDriver extends SparkPipelineDriver
+public class BatchSparkPipelineDriver extends SparkPipelineRunner
   implements JavaSparkMain, TxRunnable {
   private static final Gson GSON = new GsonBuilder()
     .registerTypeAdapter(SetMultimap.class, new SetMultimapCodec<>())

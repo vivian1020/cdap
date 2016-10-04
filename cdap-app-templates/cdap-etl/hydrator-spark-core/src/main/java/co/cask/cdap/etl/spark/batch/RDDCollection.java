@@ -25,6 +25,7 @@ import co.cask.cdap.etl.api.streaming.Windower;
 import co.cask.cdap.etl.spark.SparkCollection;
 import co.cask.cdap.etl.spark.SparkPairCollection;
 import co.cask.cdap.etl.spark.function.CountingFunction;
+import co.cask.cdap.etl.spark.function.PluginFunctionContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -81,7 +82,9 @@ public class RDDCollection<T> implements SparkCollection<T> {
   }
 
   @Override
-  public <U> SparkCollection<U> compute(String stageName, SparkCompute<T, U> compute) throws Exception {
+  public <U> SparkCollection<U> compute(PluginFunctionContext pluginFunctionContext) throws Exception {
+    String stageName = pluginFunctionContext.getStageName();
+    SparkCompute<T, U> compute = pluginFunctionContext.createPlugin();
     SparkExecutionPluginContext sparkPluginContext =
       new BasicSparkExecutionPluginContext(sec, jsc, datasetContext, stageName);
     compute.initialize(sparkPluginContext);

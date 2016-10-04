@@ -55,7 +55,7 @@ import java.util.Set;
 /**
  * Base Spark program to run a Hydrator pipeline.
  */
-public abstract class SparkPipelineDriver {
+public abstract class SparkPipelineRunner {
 
   protected abstract SparkCollection<Object> getSource(String stageName,
                                                        PluginFunctionContext pluginFunctionContext) throws Exception;
@@ -117,9 +117,7 @@ public abstract class SparkPipelineDriver {
 
       } else if (SparkCompute.PLUGIN_TYPE.equals(pluginType)) {
 
-        SparkCompute<Object, Object> sparkCompute =
-          sec.getPluginContext().newPluginInstance(stageName, macroEvaluator);
-        stageData = stageData.compute(stageName, sparkCompute);
+        stageData = stageData.compute(pluginFunctionContext);
 
       } else if (SparkSink.PLUGIN_TYPE.equals(pluginType)) {
 

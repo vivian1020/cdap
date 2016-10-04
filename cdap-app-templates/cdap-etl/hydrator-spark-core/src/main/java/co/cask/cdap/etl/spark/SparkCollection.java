@@ -16,9 +16,9 @@
 
 package co.cask.cdap.etl.spark;
 
-import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkSink;
 import co.cask.cdap.etl.api.streaming.Windower;
+import co.cask.cdap.etl.spark.function.PluginFunctionContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 
@@ -44,7 +44,7 @@ public interface SparkCollection<T> {
 
   <K, V> SparkPairCollection<K, V> flatMapToPair(PairFlatMapFunction<T, K, V> function);
 
-  <U> SparkCollection<U> compute(String stageName, SparkCompute<T, U> compute) throws Exception;
+  <U> SparkCollection<U> compute(PluginFunctionContext pluginFunctionContext) throws Exception;
 
   void store(String stageName, PairFlatMapFunction<T, Object, Object> sinkFunction);
 

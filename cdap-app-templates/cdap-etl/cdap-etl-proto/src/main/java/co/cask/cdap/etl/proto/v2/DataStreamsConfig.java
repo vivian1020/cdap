@@ -29,6 +29,7 @@ public final class DataStreamsConfig extends ETLConfig {
   private final String batchInterval;
   private final Resources driverResources;
   private final String extraJavaOpts;
+  private final Boolean disableCheckpoints;
   // See comments in DataStreamsSparkLauncher for explanation on why we need this.
   private final boolean isUnitTest;
 
@@ -38,12 +39,14 @@ public final class DataStreamsConfig extends ETLConfig {
                             Resources driverResources,
                             boolean stageLoggingEnabled,
                             String batchInterval,
-                            boolean isUnitTest) {
+                            boolean isUnitTest,
+                            boolean disableCheckpoints) {
     super(stages, connections, resources, stageLoggingEnabled);
     this.batchInterval = batchInterval;
     this.driverResources = driverResources;
     this.isUnitTest = isUnitTest;
     this.extraJavaOpts = "";
+    this.disableCheckpoints = disableCheckpoints;
   }
 
   public Resources getDriverResources() {
@@ -56,6 +59,10 @@ public final class DataStreamsConfig extends ETLConfig {
 
   public boolean isUnitTest() {
     return isUnitTest;
+  }
+
+  public boolean checkpointsDisabled() {
+    return disableCheckpoints == null ? false : disableCheckpoints;
   }
 
   public String getExtraJavaOpts() {
@@ -126,7 +133,7 @@ public final class DataStreamsConfig extends ETLConfig {
 
     public DataStreamsConfig build() {
       return new DataStreamsConfig(stages, connections, resources, driverResources,
-                                   stageLoggingEnabled, batchInterval, isUnitTest);
+                                   stageLoggingEnabled, batchInterval, isUnitTest, false);
     }
   }
 }
