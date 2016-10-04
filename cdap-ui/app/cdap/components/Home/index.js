@@ -92,9 +92,11 @@ class Home extends Component {
   processQueryString(queryString) {
     let sortQueryIndex = queryString.indexOf('sort=');
     let filterIndex = queryString.indexOf('filter=');
+    let searchTermIndex = queryString.indexOf('search=');
     let filtersArr = [];
     let sortOpt;
     let sortQuery;
+    let searchTerm;
 
     //Set default sort settings
     sortOpt = this.sortOptions[0];
@@ -117,6 +119,17 @@ class Home extends Component {
       }
     }
 
+    if(searchTermIndex !== -1){
+      searchTerm = queryString.substring(searchTermIndex  + 7);
+      let endSearchIndex = searchTerm.indexOf('&');
+
+      if(endSearchIndex !== -1){
+        searchTerm = searchTerm.substring(0, endSearchIndex);
+      }
+
+      searchTerm = searchTerm.split('+').join(' ');
+    }
+
     if(filterIndex !== -1){
       //Parse url substring ; start after 'filter='
       let filterString = location.search.substring(filterIndex + 7);
@@ -130,9 +143,11 @@ class Home extends Component {
         }
       }
     }
+
     return {
       'filter' : filtersArr,
-      'sort' : sortOpt
+      'sort' : sortOpt,
+      'search' : searchTerm
     };
   }
 
@@ -148,6 +163,7 @@ class Home extends Component {
     let filterSortObj = this.processQueryString(location.search);
     let urlFilters;
     let urlSort;
+    let urlSearch;
 
     if(typeof filterSortObj.filter !== 'undefined' && filterSortObj.filter.length === 0){
       urlFilters = this.state.filter;
@@ -155,9 +171,10 @@ class Home extends Component {
       urlFilters = filterSortObj.filter;
     }
 
+    urlSearch = filterSortObj.search;
     urlSort = filterSortObj.sort;
 
-    this.search(this.state.query, urlFilters, urlSort);
+    this.search(urlSearch, urlFilters, urlSort);
   }
 
   search(
@@ -235,6 +252,7 @@ class Home extends Component {
     let filterString = '';
     let isDefaultSorted = this.isDefaultSort();
     let isDefaultFiltered = this.isDefaultFilter();
+    let searchTerm = this.state.query;
 
     if(isDefaultSorted && isDefaultFiltered){
       return;
@@ -248,6 +266,14 @@ class Home extends Component {
       sortAndFilterParams = !isDefaultSorted ? sortAndFilterParams.concat('&') : '?';
       filterString = this.state.filter.join(',');
       sortAndFilterParams = sortAndFilterParams + 'filter=' + filterString;
+    }
+
+    if(searchTerm.length > 0){
+      if(sortAndFilterParams.length > 0){
+        sortAndFilterParams = sortAndFilterParams + '&search=' + searchTerm;
+      } else {
+        sortAndFilterParams = '?search=' + searchTerm;
+      }
     }
 
     let obj = {
