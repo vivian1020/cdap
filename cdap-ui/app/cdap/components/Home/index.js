@@ -30,7 +30,6 @@ const defaultFilter = ['app', 'dataset', 'stream'];
 class Home extends Component {
   constructor(props) {
     super(props);
-    this.urlFilters = [];
     this.urlSort = '';
     this.filterOptions = [
       {
@@ -133,6 +132,12 @@ class Home extends Component {
     if(filterIndex !== -1){
       //Parse url substring ; start after 'filter='
       let filterString = location.search.substring(filterIndex + 7);
+      let endFilterIndex = filterString.indexOf('&');
+
+      if(endFilterIndex !== -1){
+        filterString = filterString.substring(0, endFilterIndex);
+      }
+
       filtersArr = filterString.split(',');
 
       //Process the array and remove any filters that are invalid
@@ -165,9 +170,6 @@ class Home extends Component {
     let urlSort;
     let urlSearch;
 
-    console.log(location);
-    console.log(location.query);
-
     if(typeof filterSortObj.filter !== 'undefined' && filterSortObj.filter.length === 0){
       urlFilters = this.state.filter;
     } else {
@@ -187,12 +189,12 @@ class Home extends Component {
     namespace = this.props.params.namespace
   ) {
 
-    this.setState({loading: true});
-
     if (filter.length === 0) {
       this.setState({query, filter, sortObj, entities: [], selectedEntity: null, loading: false});
       return;
     }
+
+    this.setState({loading: true});
 
     let params = {
       namespace: namespace,
@@ -252,31 +254,39 @@ class Home extends Component {
 
   makeSortFilterParams(){
     let sortAndFilterParams = '';
-    let filterString = '';
+    let sortParams = '';
+    let filterParams = '';
+    let searchParams = '';
+    let queryParams = [];
     let isDefaultSorted = this.isDefaultSort();
     let isDefaultFiltered = this.isDefaultFilter();
     let searchTerm = this.state.query;
 
-    if(isDefaultSorted && isDefaultFiltered){
+    //No query string to be included in URL
+    if(isDefaultSorted && isDefaultFiltered && searchTerm.length === 0){
       return;
     }
 
-    // //Add Query Params to URL on re-render
-    sortAndFilterParams = !isDefaultSorted ? '?sort=' + this.state.sortObj.sort.split(' ').join('+') : '';
+    if(!isDefaultSorted){
+      sortParams = 'sort=' + this.state.sortObj.sort.split(' ').join('+');
+    }
 
     if(!isDefaultFiltered){
-      //If the cards are sorted and filtered, seperate query params
-      sortAndFilterParams = !isDefaultSorted ? sortAndFilterParams.concat('&') : '?';
-      filterString = this.state.filter.join(',');
-      sortAndFilterParams = sortAndFilterParams + 'filter=' + filterString;
+      filterParams = 'filter=' + this.state.filter.join(',');
     }
 
     if(searchTerm.length > 0){
-      if(sortAndFilterParams.length > 0){
-        sortAndFilterParams = sortAndFilterParams + '&search=' + searchTerm;
-      } else {
-        sortAndFilterParams = '?search=' + searchTerm;
-      }
+      searchParams = 'search=' + searchTerm;
+    }
+
+    queryParams = [sortParams, filterParams, searchParams].filter((element) => {
+      return element.length > 0;
+    });
+
+    sortAndFilterParams = queryParams.join('&');
+
+    if(sortAndFilterParams.length > 0){
+      sortAndFilterParams = '?' + sortAndFilterParams;
     }
 
     let obj = {

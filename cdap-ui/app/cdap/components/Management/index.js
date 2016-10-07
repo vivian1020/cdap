@@ -158,7 +158,7 @@ class Management extends Component {
     return (
        <div className="management">
         <Helmet
-          title="Administrator"
+          title={T.translate('features.Management.Title')}
         />
         <div className="top-panel">
           <div className="admin-row top-row">
