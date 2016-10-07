@@ -30,7 +30,6 @@ const defaultFilter = ['app', 'dataset', 'stream'];
 class Home extends Component {
   constructor(props) {
     super(props);
-    this.urlSort = '';
     this.filterOptions = [
       {
         displayName: T.translate('commons.entity.application.plural'),
