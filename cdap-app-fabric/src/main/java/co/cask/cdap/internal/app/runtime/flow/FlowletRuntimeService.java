@@ -16,8 +16,10 @@
 
 package co.cask.cdap.internal.app.runtime.flow;
 
+import co.cask.cdap.api.annotation.NoTransaction;
 import co.cask.cdap.api.flow.flowlet.Callback;
 import co.cask.cdap.api.flow.flowlet.Flowlet;
+import co.cask.cdap.api.flow.flowlet.FlowletContext;
 import co.cask.cdap.common.lang.ClassLoaders;
 import co.cask.cdap.common.lang.CombineClassLoader;
 import co.cask.cdap.common.logging.LoggingContextAccessor;
@@ -31,6 +33,8 @@ import org.apache.tephra.TransactionFailureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.Collection;
 
 /**
@@ -104,49 +108,78 @@ final class FlowletRuntimeService extends AbstractIdleService {
     flowletProcessDriver.startAndWait();
   }
 
-  private void initFlowlet() throws InterruptedException {
+  private boolean isTransactional(String methodName, Class<?> ... params) {
     try {
-      dataFabricFacade.createTransactionExecutor().execute(new TransactionExecutor.Subroutine() {
-        @Override
-        public void apply() throws Exception {
-          LOG.info("Initializing flowlet: " + flowletContext);
-          ClassLoader classLoader = setContextCombinedClassLoader();
-          try {
-            flowlet.initialize(flowletContext);
-          } finally {
-            ClassLoaders.setContextClassLoader(classLoader);
-          }
-          LOG.info("Flowlet initialized: " + flowletContext);
+      Method method = flowlet.getClass().getMethod(methodName, params);
+      Annotation annotation = method.getAnnotation(NoTransaction.class);
+      return annotation == null;
+    } catch (NoSuchMethodException e) {
+      // this can never happen, but we should not ignore it if it does
+      LOG.error("Unexpected: flowlet class {} does not have a method {}({})",
+                flowlet.getClass().getName(), methodName, params);
+      throw Throwables.propagate(e);
+    }
+  }
+
+  private void initFlowlet() throws InterruptedException {
+    LOG.info("Initializing flowlet: " + flowletContext);
+    TransactionExecutor.Subroutine sub = new TransactionExecutor.Subroutine() {
+      @Override
+      public void apply() throws Exception {
+        ClassLoader classLoader = setContextCombinedClassLoader();
+        try {
+          flowlet.initialize(flowletContext);
+        } finally {
+          ClassLoaders.setContextClassLoader(classLoader);
         }
-      });
-    } catch (TransactionFailureException e) {
-      Throwable cause = e.getCause() == null ? e : e.getCause();
+      }
+    };
+    try {
+      if (isTransactional("initialize", FlowletContext.class)) {
+        try {
+          dataFabricFacade.createTransactionExecutor().execute(sub);
+        } catch (TransactionFailureException e) {
+          throw e.getCause() == null ? e : e.getCause();
+        }
+      } else {
+        sub.apply();
+      }
+      LOG.info("Flowlet initialized: " + flowletContext);
+    } catch (Throwable cause) {
       LOG.error("Flowlet throws exception during flowlet initialize: " + flowletContext, cause);
       throw Throwables.propagate(cause);
     }
   }
 
   private void destroyFlowlet() {
-    try {
-      dataFabricFacade.createTransactionExecutor().execute(new TransactionExecutor.Subroutine() {
-        @Override
-        public void apply() throws Exception {
-          LOG.info("Destroying flowlet: " + flowletContext);
-          ClassLoader classLoader = setContextCombinedClassLoader();
-          try {
-            flowlet.destroy();
-          } finally {
-            ClassLoaders.setContextClassLoader(classLoader);
-          }
-          LOG.info("Flowlet destroyed: " + flowletContext);
+    LOG.info("Destroying flowlet: " + flowletContext);
+    TransactionExecutor.Subroutine sub = new TransactionExecutor.Subroutine() {
+      @Override
+      public void apply() throws Exception {
+        ClassLoader classLoader = setContextCombinedClassLoader();
+        try {
+          flowlet.destroy();
+        } finally {
+          ClassLoaders.setContextClassLoader(classLoader);
         }
-      });
-    } catch (TransactionFailureException e) {
-      Throwable cause = e.getCause() == null ? e : e.getCause();
-      LOG.error("Flowlet throws exception during flowlet destroy: " + flowletContext, cause);
-      // No need to propagate, as it is shutting down.
+      }
+    };
+    try {
+      if (isTransactional("destroy")) {
+        try {
+          dataFabricFacade.createTransactionExecutor().execute(sub);
+        } catch (TransactionFailureException e) {
+          throw e.getCause() == null ? e : e.getCause();
+        }
+      } else {
+        sub.apply();
+      }
+      LOG.info("Flowlet destroyed: " + flowletContext);
     } catch (InterruptedException e) {
       // No need to propagate, as it is shutting down.
+    } catch (Throwable cause) {
+      LOG.error("Flowlet throws exception during flowlet destroy: " + flowletContext, cause);
+      throw Throwables.propagate(cause);
     }
   }
 

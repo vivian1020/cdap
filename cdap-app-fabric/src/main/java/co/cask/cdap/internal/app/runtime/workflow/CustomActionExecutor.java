@@ -222,8 +222,8 @@ class CustomActionExecutor {
 
   @Deprecated
   private void destroyInTransaction() {
-    TransactionContext txContext = workflowContext.getDatasetCache().newTransactionContext();
     try {
+      TransactionContext txContext = workflowContext.getDatasetCache().newTransactionContext();
       txContext.start();
       try {
         action.destroy();

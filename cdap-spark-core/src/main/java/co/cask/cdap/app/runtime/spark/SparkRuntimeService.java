@@ -383,8 +383,8 @@ final class SparkRuntimeService extends AbstractExecutionThreadService {
    */
   private void destroy(final ProgramState state) {
     DynamicDatasetCache datasetCache = runtimeContext.getDatasetCache();
-    TransactionContext txContext = datasetCache.newTransactionContext();
     try {
+      TransactionContext txContext = datasetCache.newTransactionContext();
       Transactions.execute(txContext, spark.getClass().getName() + ".destroy()", new Callable<Void>() {
         @Override
         public Void call() throws Exception {

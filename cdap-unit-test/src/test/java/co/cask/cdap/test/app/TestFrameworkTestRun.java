@@ -1188,9 +1188,16 @@ public class TestFrameworkTestRun extends TestFrameworkTestBase {
   public void testAppWithTxTimeout() throws Exception {
     ApplicationManager appManager = deployApplication(testSpace, AppWithTimedTransactions.class);
     try {
+      getStreamManager(testSpace, AppWithTimedTransactions.INPUT).send("hello");
+
       ServiceManager serviceManager = appManager.getServiceManager(AppWithTimedTransactions.SERVICE).start();
       WorkerManager workerManager = appManager.getWorkerManager(AppWithTimedTransactions.WORKER).start();
       WorkflowManager workflowManager = appManager.getWorkflowManager(AppWithTimedTransactions.WORKFLOW).start();
+      FlowManager flowManager = appManager.getFlowManager(AppWithTimedTransactions.FLOW).start();
+
+      flowManager.getFlowletMetrics(AppWithTimedTransactions.FLOWLET_NOTX).waitForProcessed(1, 10, TimeUnit.SECONDS);
+      flowManager.stop();
+      flowManager.waitForStatus(false);
 
       serviceManager.waitForStatus(true);
       callServicePut(serviceManager.getServiceURL(), "test", "hello");
@@ -1198,26 +1205,52 @@ public class TestFrameworkTestRun extends TestFrameworkTestBase {
       workerManager.waitForFinish(10L, TimeUnit.SECONDS);
       workflowManager.waitForFinish(10L, TimeUnit.SECONDS);
 
-      DataSetManager<CapturingDataset> dataset = getDataset(testSpace, AppWithTimedTransactions.CAPTURE);
-      validateCellValue(dataset.get().getTable(),
-                        AppWithTimedTransactions.WORKER, AppWithTimedTransactions.INITIALIZE,
+      DataSetManager<TransactionCapturingTable> dataset = getDataset(testSpace, AppWithTimedTransactions.CAPTURE);
+      Table t = dataset.get().getTable();
+
+      // validate transactions performed by the worker
+      validateCellValue(t, AppWithTimedTransactions.WORKER, AppWithTimedTransactions.INITIALIZE,
                         String.valueOf(AppWithTimedTransactions.TIMEOUT_WORKER_INITIALIZE));
-      validateCellValue(dataset.get().getTable(),
-                        AppWithTimedTransactions.WORKER, AppWithTimedTransactions.DESTROY,
+      validateCellValue(t, AppWithTimedTransactions.WORKER, AppWithTimedTransactions.DESTROY,
                         String.valueOf(AppWithTimedTransactions.TIMEOUT_WORKER_DESTROY));
-      validateCellValue(dataset.get().getTable(),
-                        AppWithTimedTransactions.WORKER, AppWithTimedTransactions.RUNTIME,
+      validateCellValue(t, AppWithTimedTransactions.WORKER, AppWithTimedTransactions.RUNTIME,
                         String.valueOf(AppWithTimedTransactions.TIMEOUT_WORKER_RUNTIME));
-      validateCellValue(dataset.get().getTable(),
-                        AppWithTimedTransactions.CONSUMER, AppWithTimedTransactions.RUNTIME,
+
+      // validate transactions performed by the service
+      validateCellValue(t, AppWithTimedTransactions.CONSUMER, AppWithTimedTransactions.RUNTIME,
                         String.valueOf(AppWithTimedTransactions.TIMEOUT_CONSUMER_RUNTIME));
-      validateCellValue(dataset.get().getTable(),
-                        AppWithTimedTransactions.PRODUCER, AppWithTimedTransactions.RUNTIME,
+      validateCellValue(t, AppWithTimedTransactions.PRODUCER, AppWithTimedTransactions.RUNTIME,
                         String.valueOf(AppWithTimedTransactions.TIMEOUT_PRODUCER_RUNTIME));
-      validateCellValue(dataset.get().getTable(),
-                        AppWithTimedTransactions.ACTION, AppWithTimedTransactions.RUNTIME,
+
+      // validate transactions performed by the workflow
+      validateCellValue(t, AppWithTimedTransactions.ACTION, AppWithTimedTransactions.RUNTIME,
                         String.valueOf(AppWithTimedTransactions.TIMEOUT_ACTION_RUNTIME));
 
+      // validate transactions performed by the flow
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_TX, AppWithTimedTransactions.INITIALIZE,
+                        AppWithTimedTransactions.DEFAULT);
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_TX, AppWithTimedTransactions.INITIALIZE_NEST,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_TX, AppWithTimedTransactions.PROCESS,
+                        AppWithTimedTransactions.DEFAULT);
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_TX, AppWithTimedTransactions.PROCESS_NEST,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_TX, AppWithTimedTransactions.DESTROY,
+                        AppWithTimedTransactions.DEFAULT);
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_TX, AppWithTimedTransactions.DESTROY_NEST,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_NOTX, AppWithTimedTransactions.INITIALIZE,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_NOTX, AppWithTimedTransactions.INITIALIZE_TX,
+                        String.valueOf(AppWithTimedTransactions.TIMEOUT_FLOWLET_INITIALIZE));
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_NOTX, AppWithTimedTransactions.INITIALIZE_NEST,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_NOTX, AppWithTimedTransactions.DESTROY,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_NOTX, AppWithTimedTransactions.DESTROY_TX,
+                        String.valueOf(AppWithTimedTransactions.TIMEOUT_FLOWLET_DESTROY));
+      validateCellValue(t, AppWithTimedTransactions.FLOWLET_NOTX, AppWithTimedTransactions.DESTROY_NEST,
+                        null);
     } finally {
       appManager.stopAll();
     }

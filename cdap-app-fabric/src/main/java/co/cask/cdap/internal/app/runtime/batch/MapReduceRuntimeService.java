@@ -566,8 +566,8 @@ final class MapReduceRuntimeService extends AbstractExecutionThreadService {
    * Calls the destroy method of {@link ProgramLifecycle}.
    */
   private void destroy(final boolean succeeded, final String failureInfo, final ClassLoader mapReduceClassLoader) {
-    TransactionContext txContext = context.getTransactionContext();
     try {
+      TransactionContext txContext = context.getTransactionContext();
       Transactions.execute(txContext, "destroy", new Callable<Void>() {
         @Override
         public Void call() throws Exception {
