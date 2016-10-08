@@ -29,6 +29,7 @@ import co.cask.cdap.api.flow.flowlet.AbstractFlowlet;
 import co.cask.cdap.api.flow.flowlet.FlowletContext;
 import co.cask.cdap.api.flow.flowlet.OutputEmitter;
 import co.cask.cdap.api.flow.flowlet.StreamEvent;
+import co.cask.cdap.api.mapreduce.AbstractMapReduce;
 import co.cask.cdap.api.service.AbstractService;
 import co.cask.cdap.api.service.http.AbstractHttpServiceHandler;
 import co.cask.cdap.api.service.http.HttpContentConsumer;
@@ -74,8 +75,12 @@ public class AppWithTimedTransactions extends AbstractApplication {
   static final String FLOW = "TimedTxFlow";
   static final String FLOWLET_TX = "TxFlowlet";
   static final String FLOWLET_NOTX = "NoTxFlowlet";
+  static final String MAPREDUCE_NOTX = "NoTxMR";
+  static final String MAPREDUCE_TX = "TxMR";
   static final String PRODUCER = "HttpContentProducer";
   static final String SERVICE = "TimedTxService";
+  static final String SPARK_NOTX = "NoTxSpark";
+  static final String SPARK_TX = "TxSpark";
   static final String WORKER = "TimedTxWorker";
   static final String WORKFLOW = "TimedTxWorkflow";
 
@@ -93,10 +98,14 @@ public class AppWithTimedTransactions extends AbstractApplication {
   static final int TIMEOUT_CONSUMER_RUNTIME = 16;
   static final int TIMEOUT_FLOWLET_DESTROY = 17;
   static final int TIMEOUT_FLOWLET_INITIALIZE = 18;
-  static final int TIMEOUT_PRODUCER_RUNTIME = 19;
-  static final int TIMEOUT_WORKER_DESTROY = 21;
-  static final int TIMEOUT_WORKER_INITIALIZE = 20;
-  static final int TIMEOUT_WORKER_RUNTIME = 22;
+  static final int TIMEOUT_MAPREDUCE_DESTROY = 19;
+  static final int TIMEOUT_MAPREDUCE_INITIALIZE = 20;
+  static final int TIMEOUT_PRODUCER_RUNTIME = 21;
+  static final int TIMEOUT_SPARK_DESTROY = 22;
+  static final int TIMEOUT_SPARK_INITIALIZE = 23;
+  static final int TIMEOUT_WORKER_DESTROY = 24;
+  static final int TIMEOUT_WORKER_INITIALIZE = 25;
+  static final int TIMEOUT_WORKER_RUNTIME = 26;
 
   @Override
   public void configure() {
@@ -104,6 +113,10 @@ public class AppWithTimedTransactions extends AbstractApplication {
     addStream(INPUT);
     createDataset(CAPTURE, TransactionCapturingTable.class);
     addWorker(new TimeoutWorker());
+    addMapReduce(new TxMR());
+    addMapReduce(new NoTxMR());
+    addSpark(new SparkWithTimedTransactions.TxSpark());
+    addSpark(new SparkWithTimedTransactions.NoTxSpark());
     addService(new AbstractService() {
       @Override
       protected void configure() {
@@ -134,8 +147,8 @@ public class AppWithTimedTransactions extends AbstractApplication {
    * Uses the provided Transactional with the given timeout, and records the timeout that the transaction
    * was actually given, or "default" if no explicit timeout was given.
    */
-  private static void executeRecordTransaction(Transactional transactional,
-                                               final String row, final String column, int timeout) {
+  static void executeRecordTransaction(Transactional transactional,
+                                       final String row, final String column, int timeout) {
     try {
       transactional.execute(timeout, new TxRunnable() {
         @Override
@@ -155,7 +168,7 @@ public class AppWithTimedTransactions extends AbstractApplication {
    * Note: we know whether and what explicit timeout was given, because we inject a {@link RevealingTxSystemClient},
    *       which returns a {@link RevealingTransaction} for {@link TransactionSystemClient#startShort(int)} only.
    */
-  private static void recordTransaction(DatasetContext context, String row, String column) {
+  static void recordTransaction(DatasetContext context, String row, String column) {
     TransactionCapturingTable capture = context.getDataset(CAPTURE);
     Transaction tx = capture.getTx();
     if (tx == null) {
@@ -179,7 +192,7 @@ public class AppWithTimedTransactions extends AbstractApplication {
    * Attempt to nest transactions. we expect this to fail, but we catch the exception and leave it to the
    * main test method to validate that no transaction was recorded.
    */
-  private static void attemptNestedTransaction(Transactional txnl, final String row, final String key) {
+  static void attemptNestedTransaction(Transactional txnl, final String row, final String key) {
     try {
       txnl.execute(new TxRunnable() {
         @Override
@@ -345,6 +358,64 @@ public class AppWithTimedTransactions extends AbstractApplication {
     @ProcessInput
     public void process(@SuppressWarnings("UnusedParameters") StreamEvent event) {
       // no-op
+    }
+  }
+
+  public static class NoTxMR extends AbstractMapReduce {
+    @Override
+    protected void configure() {
+      setName(MAPREDUCE_NOTX);
+    }
+
+    @Override
+    @NoTransaction
+    protected void initialize() throws Exception {
+      // this job will fail because we don't configure the mapper etc. That is fine because destroy() still gets called
+      recordTransaction(getContext(), MAPREDUCE_NOTX, INITIALIZE);
+      executeRecordTransaction(getContext(), MAPREDUCE_NOTX, INITIALIZE_TX, TIMEOUT_MAPREDUCE_INITIALIZE);
+      getContext().execute(new TxRunnable() {
+        @Override
+        public void run(DatasetContext ctext) throws Exception {
+          attemptNestedTransaction(getContext(), MAPREDUCE_NOTX, INITIALIZE_NEST);
+        }
+      });
+    }
+
+    @Override
+    @NoTransaction
+    public void destroy() {
+      recordTransaction(getContext(), MAPREDUCE_NOTX, DESTROY);
+      executeRecordTransaction(getContext(), MAPREDUCE_NOTX, DESTROY_TX, TIMEOUT_MAPREDUCE_DESTROY);
+      try {
+        getContext().execute(new TxRunnable() {
+          @Override
+          public void run(DatasetContext ctext) throws Exception {
+            attemptNestedTransaction(getContext(), MAPREDUCE_NOTX, DESTROY_NEST);
+          }
+        });
+      } catch (TransactionFailureException e) {
+        throw Throwables.propagate(e);
+      }
+    }
+  }
+
+  public static class TxMR extends AbstractMapReduce {
+    @Override
+    protected void configure() {
+      setName(MAPREDUCE_TX);
+    }
+
+    @Override
+    protected void initialize() throws Exception {
+      // this job will fail because we don't configure the mapper etc. That is fine because destroy() still gets called
+      recordTransaction(getContext(), MAPREDUCE_TX, INITIALIZE);
+      attemptNestedTransaction(getContext(), MAPREDUCE_TX, INITIALIZE_NEST);
+    }
+
+    @Override
+    public void destroy() {
+      recordTransaction(getContext(), MAPREDUCE_TX, DESTROY);
+      attemptNestedTransaction(getContext(), MAPREDUCE_TX, DESTROY_NEST);
     }
   }
 

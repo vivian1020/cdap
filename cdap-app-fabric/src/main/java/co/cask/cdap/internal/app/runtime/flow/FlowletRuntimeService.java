@@ -16,13 +16,13 @@
 
 package co.cask.cdap.internal.app.runtime.flow;
 
-import co.cask.cdap.api.annotation.NoTransaction;
 import co.cask.cdap.api.flow.flowlet.Callback;
 import co.cask.cdap.api.flow.flowlet.Flowlet;
 import co.cask.cdap.api.flow.flowlet.FlowletContext;
 import co.cask.cdap.common.lang.ClassLoaders;
 import co.cask.cdap.common.lang.CombineClassLoader;
 import co.cask.cdap.common.logging.LoggingContextAccessor;
+import co.cask.cdap.data2.transaction.Transactions;
 import co.cask.cdap.internal.app.runtime.DataFabricFacade;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -33,8 +33,6 @@ import org.apache.tephra.TransactionFailureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.util.Collection;
 
 /**
@@ -108,19 +106,6 @@ final class FlowletRuntimeService extends AbstractIdleService {
     flowletProcessDriver.startAndWait();
   }
 
-  private boolean isTransactional(String methodName, Class<?> ... params) {
-    try {
-      Method method = flowlet.getClass().getMethod(methodName, params);
-      Annotation annotation = method.getAnnotation(NoTransaction.class);
-      return annotation == null;
-    } catch (NoSuchMethodException e) {
-      // this can never happen, but we should not ignore it if it does
-      LOG.error("Unexpected: flowlet class {} does not have a method {}({})",
-                flowlet.getClass().getName(), methodName, params);
-      throw Throwables.propagate(e);
-    }
-  }
-
   private void initFlowlet() throws InterruptedException {
     LOG.info("Initializing flowlet: " + flowletContext);
     TransactionExecutor.Subroutine sub = new TransactionExecutor.Subroutine() {
@@ -135,7 +120,7 @@ final class FlowletRuntimeService extends AbstractIdleService {
       }
     };
     try {
-      if (isTransactional("initialize", FlowletContext.class)) {
+      if (Transactions.isTransactional(flowlet, "initialize", FlowletContext.class)) {
         try {
           dataFabricFacade.createTransactionExecutor().execute(sub);
         } catch (TransactionFailureException e) {
@@ -165,7 +150,7 @@ final class FlowletRuntimeService extends AbstractIdleService {
       }
     };
     try {
-      if (isTransactional("destroy")) {
+      if (Transactions.isTransactional(flowlet, "destroy")) {
         try {
           dataFabricFacade.createTransactionExecutor().execute(sub);
         } catch (TransactionFailureException e) {

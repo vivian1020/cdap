@@ -18,6 +18,7 @@ package co.cask.cdap.data2.transaction;
 
 import co.cask.cdap.api.Transactional;
 import co.cask.cdap.api.TxRunnable;
+import co.cask.cdap.api.annotation.NoTransaction;
 import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
 import com.google.common.base.Functions;
@@ -36,6 +37,8 @@ import org.apache.tephra.TransactionSystemClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -343,5 +346,25 @@ public final class Transactions {
 
   private Transactions() {
     // Private the constructor for util class
+  }
+
+  /**
+   * Determines whether a method of a program class is annotated with @NoTransaction.
+   * @param program the program
+   * @param methodName the name of the method
+   * @param params the paramters of the method
+   * @return true if the method does not have the @NoTransaction annotation
+   */
+  public static boolean isTransactional(Object program, String methodName, Class<?>... params) {
+    try {
+      Method method = program.getClass().getDeclaredMethod(methodName, params);
+      Annotation annotation = method.getAnnotation(NoTransaction.class);
+      return annotation == null;
+    } catch (NoSuchMethodException e) {
+      // this can never happen, but we should not ignore it if it does
+      LOG.error("Unexpected: flowlet class {} does not have a method {}({})",
+                program.getClass().getName(), methodName, params);
+      throw Throwables.propagate(e);
+    }
   }
 }

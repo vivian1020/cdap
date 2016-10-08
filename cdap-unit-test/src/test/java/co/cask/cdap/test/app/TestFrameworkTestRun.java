@@ -1194,6 +1194,10 @@ public class TestFrameworkTestRun extends TestFrameworkTestBase {
       WorkerManager workerManager = appManager.getWorkerManager(AppWithTimedTransactions.WORKER).start();
       WorkflowManager workflowManager = appManager.getWorkflowManager(AppWithTimedTransactions.WORKFLOW).start();
       FlowManager flowManager = appManager.getFlowManager(AppWithTimedTransactions.FLOW).start();
+      MapReduceManager txMRManager = appManager.getMapReduceManager(AppWithTimedTransactions.MAPREDUCE_TX).start();
+      MapReduceManager notxMRManager = appManager.getMapReduceManager(AppWithTimedTransactions.MAPREDUCE_NOTX).start();
+      SparkManager txSparkManager = appManager.getSparkManager(AppWithTimedTransactions.SPARK_TX).start();
+      SparkManager notxSparkManager = appManager.getSparkManager(AppWithTimedTransactions.SPARK_NOTX).start();
 
       flowManager.getFlowletMetrics(AppWithTimedTransactions.FLOWLET_NOTX).waitForProcessed(1, 10, TimeUnit.SECONDS);
       flowManager.stop();
@@ -1202,6 +1206,10 @@ public class TestFrameworkTestRun extends TestFrameworkTestBase {
       serviceManager.waitForStatus(true);
       callServicePut(serviceManager.getServiceURL(), "test", "hello");
 
+      txMRManager.waitForFinish(10L, TimeUnit.SECONDS);
+      notxMRManager.waitForFinish(10L, TimeUnit.SECONDS);
+      txSparkManager.waitForFinish(10L, TimeUnit.SECONDS);
+      notxSparkManager.waitForFinish(10L, TimeUnit.SECONDS);
       workerManager.waitForFinish(10L, TimeUnit.SECONDS);
       workflowManager.waitForFinish(10L, TimeUnit.SECONDS);
 
@@ -1251,6 +1259,51 @@ public class TestFrameworkTestRun extends TestFrameworkTestBase {
                         String.valueOf(AppWithTimedTransactions.TIMEOUT_FLOWLET_DESTROY));
       validateCellValue(t, AppWithTimedTransactions.FLOWLET_NOTX, AppWithTimedTransactions.DESTROY_NEST,
                         null);
+
+      // validate transactions performed by the mapreduce's
+      validateCellValue(t, AppWithTimedTransactions.MAPREDUCE_TX, AppWithTimedTransactions.INITIALIZE,
+                        AppWithTimedTransactions.DEFAULT);
+      validateCellValue(t, AppWithTimedTransactions.MAPREDUCE_TX, AppWithTimedTransactions.INITIALIZE_NEST,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.MAPREDUCE_TX, AppWithTimedTransactions.DESTROY,
+                        AppWithTimedTransactions.DEFAULT);
+      validateCellValue(t, AppWithTimedTransactions.MAPREDUCE_TX, AppWithTimedTransactions.DESTROY_NEST,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.MAPREDUCE_NOTX, AppWithTimedTransactions.INITIALIZE,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.MAPREDUCE_NOTX, AppWithTimedTransactions.INITIALIZE_TX,
+                        String.valueOf(AppWithTimedTransactions.TIMEOUT_MAPREDUCE_INITIALIZE));
+      validateCellValue(t, AppWithTimedTransactions.MAPREDUCE_NOTX, AppWithTimedTransactions.INITIALIZE_NEST,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.MAPREDUCE_NOTX, AppWithTimedTransactions.DESTROY,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.MAPREDUCE_NOTX, AppWithTimedTransactions.DESTROY_TX,
+                        String.valueOf(AppWithTimedTransactions.TIMEOUT_MAPREDUCE_DESTROY));
+      validateCellValue(t, AppWithTimedTransactions.MAPREDUCE_NOTX, AppWithTimedTransactions.DESTROY_NEST,
+                        null);
+
+      // validate transactions performed by the spark's
+      validateCellValue(t, AppWithTimedTransactions.SPARK_TX, AppWithTimedTransactions.INITIALIZE,
+                        AppWithTimedTransactions.DEFAULT);
+      validateCellValue(t, AppWithTimedTransactions.SPARK_TX, AppWithTimedTransactions.INITIALIZE_NEST,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.SPARK_TX, AppWithTimedTransactions.DESTROY,
+                        AppWithTimedTransactions.DEFAULT);
+      validateCellValue(t, AppWithTimedTransactions.SPARK_TX, AppWithTimedTransactions.DESTROY_NEST,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.SPARK_NOTX, AppWithTimedTransactions.INITIALIZE,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.SPARK_NOTX, AppWithTimedTransactions.INITIALIZE_TX,
+                        String.valueOf(AppWithTimedTransactions.TIMEOUT_SPARK_INITIALIZE));
+      validateCellValue(t, AppWithTimedTransactions.SPARK_NOTX, AppWithTimedTransactions.INITIALIZE_NEST,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.SPARK_NOTX, AppWithTimedTransactions.DESTROY,
+                        null);
+      validateCellValue(t, AppWithTimedTransactions.SPARK_NOTX, AppWithTimedTransactions.DESTROY_TX,
+                        String.valueOf(AppWithTimedTransactions.TIMEOUT_SPARK_DESTROY));
+      validateCellValue(t, AppWithTimedTransactions.SPARK_NOTX, AppWithTimedTransactions.DESTROY_NEST,
+                        null);
+
     } finally {
       appManager.stopAll();
     }
