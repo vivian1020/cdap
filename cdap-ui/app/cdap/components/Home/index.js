@@ -91,18 +91,16 @@ class Home extends Component {
     if(this.props.location.query){
       filtersArr = this.props.location.query.filter ? this.props.location.query.filter.split(',') : [];
       sortTerm = this.props.location.query.sort ? this.props.location.query.sort : '';
-      searchTerm = this.props.location.query.searchTerm ? this.props.location.query.searchTerm : '';
+      searchTerm = this.props.location.query.search ? this.props.location.query.search : '';
     }
 
-    for(let i = 0; i < this.sortOptions.length; i++){
-      if(this.sortOptions[i].sort === sortTerm){
-        sortOpt = this.sortOptions[i];
-      }
-    }
+    sortOpt = this.sortOptions.filter((option) => {
+      return option.sort === sortTerm;
+    });
 
     return {
       'filter' : filtersArr,
-      'sort' : sortOpt,
+      'sort' : sortOpt[0],
       'search' : searchTerm
     };
   }
