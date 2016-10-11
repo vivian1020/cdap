@@ -353,7 +353,7 @@ public final class Transactions {
    * @param program the program
    * @param methodName the name of the method
    * @param params the paramters of the method
-   * @return true if the method does not have the @NoTransaction annotation
+   * @return false if the class does declares the method (not inherited) and it has the @NoTransaction annotation.
    */
   public static boolean isTransactional(Object program, String methodName, Class<?>... params) {
     try {
@@ -361,10 +361,10 @@ public final class Transactions {
       Annotation annotation = method.getAnnotation(NoTransaction.class);
       return annotation == null;
     } catch (NoSuchMethodException e) {
-      // this can never happen, but we should not ignore it if it does
-      LOG.error("Unexpected: flowlet class {} does not have a method {}({})",
-                program.getClass().getName(), methodName, params);
-      throw Throwables.propagate(e);
+      // this can happen, for example, it a MapReduce extends AbstractMapReduce but does not override destroy().
+      // in that case, the MapReduce inherits destroy() from the abstract class, which does not have the annotation
+      // TODO: make this logic better. Perhaps we need special casing for AbstractMR/Spark
+      return true;
     }
   }
 }

@@ -316,6 +316,7 @@ final class MapReduceRuntimeService extends AbstractExecutionThreadService {
         // log after the job.submit(), because the jobId is not assigned before then
         LOG.info("Submitted MapReduce Job: {}.", context);
 
+        this.job = job;
         this.transaction = tx;
       } catch (Throwable t) {
         Transactions.invalidateQuietly(txClient, tx);

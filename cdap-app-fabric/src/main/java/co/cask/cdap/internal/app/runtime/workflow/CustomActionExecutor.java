@@ -18,7 +18,11 @@ package co.cask.cdap.internal.app.runtime.workflow;
 
 import co.cask.cdap.api.ProgramState;
 import co.cask.cdap.api.ProgramStatus;
+import co.cask.cdap.api.TxRunnable;
+import co.cask.cdap.api.customaction.AbstractCustomAction;
 import co.cask.cdap.api.customaction.CustomAction;
+import co.cask.cdap.api.customaction.CustomActionContext;
+import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.workflow.WorkflowAction;
 import co.cask.cdap.app.metrics.ProgramUserMetrics;
@@ -27,6 +31,7 @@ import co.cask.cdap.common.lang.ClassLoaders;
 import co.cask.cdap.common.lang.CombineClassLoader;
 import co.cask.cdap.common.lang.InstantiatorFactory;
 import co.cask.cdap.common.lang.PropertyFieldSetter;
+import co.cask.cdap.data2.transaction.Transactions;
 import co.cask.cdap.internal.app.runtime.DataSetFieldSetter;
 import co.cask.cdap.internal.app.runtime.MetricsFieldSetter;
 import co.cask.cdap.internal.app.runtime.customaction.BasicCustomActionContext;
@@ -162,29 +167,33 @@ class CustomActionExecutor {
   }
 
   private void initialize() throws Exception {
-    TransactionContext txContext = customActionContext.getDatasetCache().newTransactionContext();
-    txContext.start();
-    try {
+    boolean isTxnl = customAction instanceof AbstractCustomAction
+      ? Transactions.isTransactional(customAction, "initialize")
+      : Transactions.isTransactional(customAction, "initialize", CustomActionContext.class);
+    if (isTxnl) {
+      customActionContext.execute(new TxRunnable() {
+        @Override
+        public void run(DatasetContext context) throws Exception {
+          customAction.initialize(customActionContext);
+        }
+      });
+    } else {
       customAction.initialize(customActionContext);
-      txContext.finish();
-    } catch (TransactionFailureException e) {
-      txContext.abort(e);
-    } catch (Throwable t) {
-      txContext.abort(new TransactionFailureException("Transaction function failure for transaction. ", t));
     }
   }
 
   private void destroy() throws Exception {
-    TransactionContext txContext = customActionContext.getDatasetCache().newTransactionContext();
+    boolean isTxnl = Transactions.isTransactional(customAction, "destroy");
     try {
-      txContext.start();
-      try {
+      if (isTxnl) {
+        customActionContext.execute(new TxRunnable() {
+          @Override
+          public void run(DatasetContext context) throws Exception {
+            customAction.destroy();
+          }
+        });
+      } else {
         customAction.destroy();
-        txContext.finish();
-      } catch (TransactionFailureException e) {
-        txContext.abort(e);
-      } catch (Throwable t) {
-        txContext.abort(new TransactionFailureException("Transaction function failure for transaction. ", t));
       }
     } catch (Throwable t) {
       LOG.error("Failed to execute the destroy method on action {} for Workflow run {}",

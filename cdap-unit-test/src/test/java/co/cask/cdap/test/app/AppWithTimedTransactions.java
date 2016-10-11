@@ -39,6 +39,7 @@ import co.cask.cdap.api.service.http.HttpServiceResponder;
 import co.cask.cdap.api.worker.AbstractWorker;
 import co.cask.cdap.api.worker.WorkerContext;
 import co.cask.cdap.api.workflow.AbstractWorkflow;
+import co.cask.cdap.api.workflow.WorkflowContext;
 import co.cask.cdap.test.RevealingTxSystemClient;
 import co.cask.cdap.test.RevealingTxSystemClient.RevealingTransaction;
 import com.google.common.base.Throwables;
@@ -70,7 +71,8 @@ public class AppWithTimedTransactions extends AbstractApplication {
   static final String INPUT = "input";
   static final String DEFAULT = "default";
 
-  static final String ACTION = "TimedTxAction";
+  static final String ACTION_TX = "TxAction";
+  static final String ACTION_NOTX = "NoTxAction";
   static final String CONSUMER = "HttpContentConsumer";
   static final String FLOW = "TimedTxFlow";
   static final String FLOWLET_TX = "TxFlowlet";
@@ -82,7 +84,8 @@ public class AppWithTimedTransactions extends AbstractApplication {
   static final String SPARK_NOTX = "NoTxSpark";
   static final String SPARK_TX = "TxSpark";
   static final String WORKER = "TimedTxWorker";
-  static final String WORKFLOW = "TimedTxWorkflow";
+  static final String WORKFLOW_TX = "TxWorkflow";
+  static final String WORKFLOW_NOTX = "NoTxWorkflow";
 
   static final String INITIALIZE = "initialize";
   static final String INITIALIZE_TX = "initialize-tx";
@@ -90,11 +93,13 @@ public class AppWithTimedTransactions extends AbstractApplication {
   static final String DESTROY = "destroy";
   static final String DESTROY_TX = "destroy-tx";
   static final String DESTROY_NEST = "destroy-nest";
-  static final String PROCESS = "process";
-  static final String PROCESS_NEST = "process-nest";
   static final String RUNTIME = "runtime";
+  static final String RUNTIME_TX = "runtime-tx";
+  static final String RUNTIME_NEST = "runtime-nest";
 
-  static final int TIMEOUT_ACTION_RUNTIME = 15;
+  static final int TIMEOUT_ACTION_RUNTIME = 13;
+  static final int TIMEOUT_ACTION_DESTROY = 14;
+  static final int TIMEOUT_ACTION_INITIALIZE = 15;
   static final int TIMEOUT_CONSUMER_RUNTIME = 16;
   static final int TIMEOUT_FLOWLET_DESTROY = 17;
   static final int TIMEOUT_FLOWLET_INITIALIZE = 18;
@@ -106,6 +111,8 @@ public class AppWithTimedTransactions extends AbstractApplication {
   static final int TIMEOUT_WORKER_DESTROY = 24;
   static final int TIMEOUT_WORKER_INITIALIZE = 25;
   static final int TIMEOUT_WORKER_RUNTIME = 26;
+  static final int TIMEOUT_WORKFLOW_DESTROY = 27;
+  static final int TIMEOUT_WORKFLOW_INITIALIZE = 28;
 
   @Override
   public void configure() {
@@ -117,18 +124,13 @@ public class AppWithTimedTransactions extends AbstractApplication {
     addMapReduce(new NoTxMR());
     addSpark(new SparkWithTimedTransactions.TxSpark());
     addSpark(new SparkWithTimedTransactions.NoTxSpark());
+    addWorkflow(new TxWorkflow());
+    addWorkflow(new NoTxWorkflow());
     addService(new AbstractService() {
       @Override
       protected void configure() {
         setName(SERVICE);
         addHandler(new TimeoutHandler());
-      }
-    });
-    addWorkflow(new AbstractWorkflow() {
-      @Override
-      protected void configure() {
-        setName(WORKFLOW);
-        addAction(new TimeoutAction());
       }
     });
     addFlow(new AbstractFlow() {
@@ -222,7 +224,7 @@ public class AppWithTimedTransactions extends AbstractApplication {
 
     @Override
     public void run() {
-      executeRecordTransaction(getContext(), WORKER, RUNTIME, TIMEOUT_WORKER_RUNTIME);
+      executeRecordTransaction(getContext(), WORKER, RUNTIME_TX, TIMEOUT_WORKER_RUNTIME);
     }
 
     @Override
@@ -243,7 +245,7 @@ public class AppWithTimedTransactions extends AbstractApplication {
 
         @Override
         public void onReceived(ByteBuffer chunk, Transactional transactional) throws Exception {
-          executeRecordTransaction(transactional, CONSUMER, RUNTIME, TIMEOUT_CONSUMER_RUNTIME);
+          executeRecordTransaction(transactional, CONSUMER, RUNTIME_TX, TIMEOUT_CONSUMER_RUNTIME);
         }
 
         @Override
@@ -252,7 +254,7 @@ public class AppWithTimedTransactions extends AbstractApplication {
 
             @Override
             public ByteBuffer nextChunk(Transactional transactional) throws Exception {
-              executeRecordTransaction(transactional, PRODUCER, RUNTIME, TIMEOUT_PRODUCER_RUNTIME);
+              executeRecordTransaction(transactional, PRODUCER, RUNTIME_TX, TIMEOUT_PRODUCER_RUNTIME);
               return ByteBuffer.allocate(0);
             }
 
@@ -273,16 +275,147 @@ public class AppWithTimedTransactions extends AbstractApplication {
     }
   }
 
-  public static class TimeoutAction extends AbstractCustomAction {
+  private static class TxWorkflow extends AbstractWorkflow {
+    @Override
+    protected void configure() {
+      setName(WORKFLOW_TX);
+      addAction(new TxAction());
+    }
+
+    @Override
+    public void initialize(WorkflowContext context) throws Exception {
+      super.initialize(context);
+      recordTransaction(context, WORKFLOW_TX, INITIALIZE);
+      attemptNestedTransaction(context, WORKFLOW_TX, INITIALIZE_NEST);
+    }
+
+    @Override
+    public void destroy() {
+      super.destroy();
+      recordTransaction(getContext(), WORKFLOW_TX, DESTROY);
+      attemptNestedTransaction(getContext(), WORKFLOW_TX, DESTROY_NEST);
+    }
+  }
+
+  private static class NoTxWorkflow extends AbstractWorkflow {
+    @Override
+    protected void configure() {
+      setName(WORKFLOW_NOTX);
+      addAction(new NoTxAction());
+    }
+
+    @Override
+    @NoTransaction
+    public void initialize(WorkflowContext context) throws Exception {
+      super.initialize(context);
+      recordTransaction(context, WORKFLOW_NOTX, INITIALIZE);
+      executeRecordTransaction(getContext(), WORKFLOW_NOTX, INITIALIZE_TX, TIMEOUT_WORKFLOW_INITIALIZE);
+      getContext().execute(new TxRunnable() {
+        @Override
+        public void run(DatasetContext ctext) throws Exception {
+          attemptNestedTransaction(getContext(), WORKFLOW_NOTX, INITIALIZE_NEST);
+        }
+      });
+    }
+
+    @Override
+    @NoTransaction
+    public void destroy() {
+      super.destroy();
+      recordTransaction(getContext(), WORKFLOW_NOTX, DESTROY);
+      executeRecordTransaction(getContext(), WORKFLOW_NOTX, DESTROY_TX, TIMEOUT_WORKFLOW_DESTROY);
+      try {
+        getContext().execute(new TxRunnable() {
+          @Override
+          public void run(DatasetContext ctext) throws Exception {
+            attemptNestedTransaction(getContext(), WORKFLOW_NOTX, DESTROY_NEST);
+          }
+        });
+      } catch (TransactionFailureException e) {
+        throw Throwables.propagate(e.getCause() == null ? e : e.getCause());
+      }
+    }
+  }
+
+  public static class NoTxAction extends AbstractCustomAction {
 
     @Override
     protected void configure() {
-      setName(ACTION);
+      setName(ACTION_NOTX);
+    }
+
+    @Override
+    @NoTransaction
+    protected void initialize() throws Exception {
+      recordTransaction(getContext(), ACTION_NOTX, INITIALIZE);
+      executeRecordTransaction(getContext(), ACTION_NOTX, INITIALIZE_TX, TIMEOUT_ACTION_INITIALIZE);
+      getContext().execute(new TxRunnable() {
+        @Override
+        public void run(DatasetContext ctext) throws Exception {
+          attemptNestedTransaction(getContext(), ACTION_NOTX, INITIALIZE_NEST);
+        }
+      });
+    }
+
+    @Override
+    @NoTransaction
+    public void destroy() {
+      recordTransaction(getContext(), ACTION_NOTX, DESTROY);
+      executeRecordTransaction(getContext(), ACTION_NOTX, DESTROY_TX, TIMEOUT_ACTION_DESTROY);
+      try {
+        getContext().execute(new TxRunnable() {
+          @Override
+          public void run(DatasetContext ctext) throws Exception {
+            attemptNestedTransaction(getContext(), ACTION_NOTX, DESTROY_NEST);
+          }
+        });
+      } catch (TransactionFailureException e) {
+        throw Throwables.propagate(e.getCause() == null ? e : e.getCause());
+      }
     }
 
     @Override
     public void run() throws Exception {
-      executeRecordTransaction(getContext(), ACTION, RUNTIME, TIMEOUT_ACTION_RUNTIME);
+      recordTransaction(getContext(), ACTION_NOTX, RUNTIME_TX);
+      executeRecordTransaction(getContext(), ACTION_NOTX, RUNTIME_TX, TIMEOUT_ACTION_RUNTIME);
+      getContext().execute(new TxRunnable() {
+        @Override
+        public void run(DatasetContext ctext) throws Exception {
+          attemptNestedTransaction(getContext(), ACTION_NOTX, RUNTIME_NEST);
+        }
+      });
+    }
+  }
+
+  public static class TxAction extends AbstractCustomAction {
+
+    @Override
+    protected void configure() {
+      setName(ACTION_TX);
+    }
+
+    @Override
+    protected void initialize() throws Exception {
+      recordTransaction(getContext(), ACTION_TX, INITIALIZE);
+      attemptNestedTransaction(getContext(), ACTION_TX, INITIALIZE_NEST);
+    }
+
+    @Override
+    public void destroy() {
+      recordTransaction(getContext(), ACTION_TX, DESTROY);
+      attemptNestedTransaction(getContext(), ACTION_TX, DESTROY_NEST);
+    }
+
+    @Override
+    public void run() throws Exception {
+      recordTransaction(getContext(), ACTION_TX, RUNTIME_TX);
+      executeRecordTransaction(getContext(), ACTION_TX, RUNTIME_TX, TIMEOUT_ACTION_RUNTIME);
+      getContext().execute(new TxRunnable() {
+        @Override
+        public void run(DatasetContext ctext) throws Exception {
+          attemptNestedTransaction(getContext(), ACTION_NOTX, RUNTIME_NEST);
+        }
+      });
     }
   }
 
@@ -311,8 +444,8 @@ public class AppWithTimedTransactions extends AbstractApplication {
 
     @ProcessInput
     public void process(StreamEvent event) {
-      recordTransaction(getContext(), getContext().getName(), PROCESS);
-      attemptNestedTransaction(getContext(), getContext().getName(), PROCESS_NEST);
+      recordTransaction(getContext(), getContext().getName(), RUNTIME);
+      attemptNestedTransaction(getContext(), getContext().getName(), RUNTIME_NEST);
       out.emit(event);
     }
   }
@@ -418,5 +551,4 @@ public class AppWithTimedTransactions extends AbstractApplication {
       attemptNestedTransaction(getContext(), MAPREDUCE_TX, DESTROY_NEST);
     }
   }
-
 }
